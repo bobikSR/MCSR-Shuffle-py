@@ -42,6 +42,8 @@ you've finished the game on all the instances. You can also pause or terminate t
 hotkey. The program has no GUI, however, everything happening will be saved into a `.log` file located
 in the `logs` folder identifiable by the start time of the program.
 
+DO NOT RUN MINECRAFT IN FULSCREEN!!! USE EITHER WINDOWED OR BORDERLESS!!!
+
 ### ToolScreen
 
 If you want to use ToolScreen you will have to do a little more while launching the instances. That

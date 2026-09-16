@@ -3,7 +3,7 @@ import re
 
 
 class VersionPattern(Enum):
-    VANILLA = re.compile(r" --version (fabric-loader-\d\.\d+(\.\d+)?-)?(.+?) ")
+    VANILLA = re.compile("(fabric-loader-\\d\\.\\d+(\\.\\d+)?-)?(.+)")
     MULTIMC = re.compile(r"minecraft-(.+)-client.jar")
     MULTIMC_2 = re.compile(r"intermediary/(.+)/intermediary")
 

@@ -1,5 +1,5 @@
 from enums import *
-from utils import *
+import utils
 import os, json
 
 class MinecraftInstance:
@@ -9,10 +9,10 @@ class MinecraftInstance:
     folder_path: str
     launcher: Launcher
 
-    def __init__(self, hwnd: int, pid: int, cmd_line: str):
+    def __init__(self, hwnd: int, pid: int, cmd_line: list[str]):
         self.hwnd = hwnd
         self.pid = pid
-        self.get_instance_info_from_cmd_line(cmd_line)
+        self.get_instance_info_from_cmd_line2(cmd_line)
 
     def __str__(self):
         return (f"Minecraft instance with HWND {self.hwnd}, PID {self.pid}, "
@@ -20,20 +20,20 @@ class MinecraftInstance:
 
     def get_instance_info_from_cmd_line2(self, cmd_line: list[str]):
         # todo: do it here with the list the psutil method gives, it may even be easier
-        path_args = list(filter(starts_with_folder_path_helper, cmd_line))
+        path_args = list(filter(utils.starts_with_folder_path_helper, cmd_line))
         if "--gameDir" in cmd_line:
             # either vanilla or color mc (folder path is the same)
-            idx = cmd_line.index("--gameDir")
             try:
+                idx = cmd_line.index("--gameDir")
                 self.folder_path = cmd_line[idx + 1]
                 if not os.path.isdir(self.folder_path):
                     raise Exception("Found .minecraft folder, but its not a directory!")
-            except (IndexError, Exception) as e:
+            except (IndexError, ValueError, Exception) as e:
                 raise Exception(f"Error occurred while trying to parse .minecraft folder! {str(e)}")
-            if (len(path_args)) > 0:
-                # color mc
-                self.launcher = Launcher.COLORMC
+
+            if os.path.isfile(os.path.join(os.path.dirname(self.folder_path), "game.json")):
                 try:
+                    # color mc
                     with open(os.path.join(os.path.dirname(self.folder_path), "game.json")) as f:
                         data = json.load(f)
                         self.version = data.get("Version", None)
@@ -41,18 +41,30 @@ class MinecraftInstance:
                             self.version = "1.16.1"
                 except Exception:
                     self.version = "1.16.1"
-                # got everything for color mc, can leave
+                    # got everything for color mc, can leave
+                self.launcher = Launcher.COLORMC
                 return
             # vanilla
             self.launcher = Launcher.VANILLA
+            try:
+                idx = cmd_line.index("--version")
+                version_str = cmd_line[idx + 1]
+                res = VersionPattern.VANILLA.value.search(version_str)
+                if res:
+                    self.version = res.group(3)
+                    return
+                self.version = "1.16.1"
+                return
+            except (ValueError, IndexError) as e:
+                self.version = "1.16.1"
+            return
 
-        # todo
-
+        # multimc
+        self.launcher = Launcher.MULTIMC
         if len(path_args) != 1:
             raise Exception("Error occurred while trying to parse .minecraft folder! Ambiguous arguments!")
         try:
-            natives_folder: str = path_args[0][19:]
-            print("NATIVES FOLDER: ", natives_folder)
+            natives_folder: str = path_args[0][20:]
             if not os.path.isdir(natives_folder):
                 raise Exception("Natives folder is not a directory!")
             if not os.path.isdir(os.path.join(os.path.dirname(natives_folder), ".minecraft")):
@@ -60,7 +72,21 @@ class MinecraftInstance:
             self.folder_path = os.path.join(os.path.dirname(natives_folder), ".minecraft")
         except (IndexError, Exception) as e:
             raise Exception(f"Error occurred while trying to parse .minecraft folder! {str(e)}")
-        # todo: rest (versions
+        try:
+            idx = cmd_line.index("-cp")
+            cp_arg = cmd_line[idx + 1]
+            res = VersionPattern.MULTIMC.value.search(cp_arg)
+            if res:
+                self.version = res.group(1)
+                return
+            res = VersionPattern.MULTIMC_2.value.search(cp_arg)
+            if res:
+                self.version = res.group(1)
+                return
+        except (ValueError, IndexError, Exception):
+            self.version = "1.16.1"
+        self.version = "1.16.1"
+        return
 
     def get_instance_info_from_cmd_line(self, cmd_line: str):
         if "--gameDir" in cmd_line:

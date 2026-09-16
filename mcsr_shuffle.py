@@ -24,7 +24,10 @@ def get_minecraft_windows() -> list[MinecraftInstance]:
 
                 proc = psutil.Process(pid)
                 cmd_line: list[str] = proc.cmdline()
-                found_instance = MinecraftInstance(hwnd, pid, cmd_line)
+                print(cmd_line)
+                cmd_line_str: str = " ".join(cmd_line)
+                print(cmd_line_str)
+                found_instance = MinecraftInstance(hwnd, pid, cmd_line_str)
                 print(f"Found {str(found_instance)}")
                 ret_list.append(found_instance)
     win32gui.EnumWindows(callback, None)

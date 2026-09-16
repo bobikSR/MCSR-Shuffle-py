@@ -8,7 +8,7 @@ not currently being played are paused). All the program does is switch between o
 
 ## Installation and set up
 
-To install the program, go to the [release page]() and download the latest release. 
+To install the program, go to the [release page](https://github.com/bobikSR/MCSR-Shuffle-py/releases) and download the latest release. 
 After installing, unzip the file into your desired folder.
 
 ### Recommended set up

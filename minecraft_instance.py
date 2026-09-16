@@ -1,4 +1,5 @@
 from enums import *
+from utils import *
 import os, json
 
 class MinecraftInstance:
@@ -19,14 +20,47 @@ class MinecraftInstance:
 
     def get_instance_info_from_cmd_line2(self, cmd_line: list[str]):
         # todo: do it here with the list the psutil method gives, it may even be easier
+        path_args = list(filter(starts_with_folder_path_helper, cmd_line))
         if "--gameDir" in cmd_line:
             # either vanilla or color mc (folder path is the same)
             idx = cmd_line.index("--gameDir")
             try:
                 self.folder_path = cmd_line[idx + 1]
-            except IndexError:
-                raise Exception("Error occurred while trying to parse .minecraft folder!")
-            # todo: rest
+                if not os.path.isdir(self.folder_path):
+                    raise Exception("Found .minecraft folder, but its not a directory!")
+            except (IndexError, Exception) as e:
+                raise Exception(f"Error occurred while trying to parse .minecraft folder! {str(e)}")
+            if (len(path_args)) > 0:
+                # color mc
+                self.launcher = Launcher.COLORMC
+                try:
+                    with open(os.path.join(os.path.dirname(self.folder_path), "game.json")) as f:
+                        data = json.load(f)
+                        self.version = data.get("Version", None)
+                        if not self.version:
+                            self.version = "1.16.1"
+                except Exception:
+                    self.version = "1.16.1"
+                # got everything for color mc, can leave
+                return
+            # vanilla
+            self.launcher = Launcher.VANILLA
+
+        # todo
+
+        if len(path_args) != 1:
+            raise Exception("Error occurred while trying to parse .minecraft folder! Ambiguous arguments!")
+        try:
+            natives_folder: str = path_args[0][19:]
+            print("NATIVES FOLDER: ", natives_folder)
+            if not os.path.isdir(natives_folder):
+                raise Exception("Natives folder is not a directory!")
+            if not os.path.isdir(os.path.join(os.path.dirname(natives_folder), ".minecraft")):
+                raise Exception("Couldn't find .minecraft folder as a sibling folder to the natives folder!")
+            self.folder_path = os.path.join(os.path.dirname(natives_folder), ".minecraft")
+        except (IndexError, Exception) as e:
+            raise Exception(f"Error occurred while trying to parse .minecraft folder! {str(e)}")
+        # todo: rest (versions
 
     def get_instance_info_from_cmd_line(self, cmd_line: str):
         if "--gameDir" in cmd_line:

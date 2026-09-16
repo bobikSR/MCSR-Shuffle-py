@@ -78,4 +78,5 @@ def run():
 
 if __name__ == "__main__":
     #run()
-    l = get_minecraft_windows()
+    #l = get_minecraft_windows()
+    print(len("-Djava.library.path="))

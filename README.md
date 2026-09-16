@@ -4,7 +4,7 @@ MCSR Shuffle is a program made for a Minecraft speedrunning challenge heavily
 inspired by [DougDoug's](https://www.youtube.com/@DougDoug) [N64 Shuffler](https://github.com/DougDougGithub/N64-Shuffler).
 The challenge is to beat multiple Minecraft worlds while this program randomly switches between them (worlds
 not currently being played are paused). All the program does is switch between opened windows,
- press buttons and read files. Currently most likely only works for Windows.
+ press buttons and read files. Currently most likely only works for Minecraft: Java Edition version 1.16.1 on Windows.
 
 ## Installation and set up
 
@@ -13,7 +13,7 @@ After installing, unzip the file into your desired folder.
 
 ### Recommended set up
 
-For launching the instances, I recommend using MultiMC or Prism as a launcher.
+For launching the instances, I recommend using MultiMC or Prism.
 If you already have an instance you use for minecraft speedrunning, make a copy (from now on "original") of 
 it which will then serve as the original instance for the rest of the shuffle instances.
 If you don't have an instance for speedrunning set up, simply make a new instance in the launcher.
@@ -40,14 +40,14 @@ To use the program, run however many instances you want (more than one), wait fo
 the title screen) and run the program **as administrator**. The program will stop itself once
 you've finished the game on all the instances. You can also pause or terminate the program using a
 hotkey. The program has no GUI, however, everything happening will be saved into a `.log` file located
-in the `logs` folder and identifiable by the start time of the program.
+in the `logs` folder identifiable by the start time of the program.
 
 ### ToolScreen
 
 If you want to use ToolScreen you will have to do a little more while launching the instances. That
 is because ToolScreen only works on the first instance (as of 16. Sept 2026) you launch, but not on any instances launched after
 (this is true at least for MultiMC). To make sure ToolScreen is active on all the opened instances, you have to
-navigate to `C:/Users/<your_username>/.config/toolscreen/dlls` and between launching each instance, you have to 
+navigate to `C:/Users/<your_username>/.config/toolscreen/dlls` and between launching each instance,  
 rename both `.dll` files in that folder. 
 
 ### Configuration
@@ -57,9 +57,9 @@ the program a little bit. Here is a list of things you can configure and what th
 the file:
 - `"lower_bound"` and `"upper_bound"` make an interval together. The program switches between the 
 windows after a random amount of time, that random number is picked from the interval defined by
-these bounds. Logically, "upper_bound" has to be a higher number than "lower_bound", both numbers
+these bounds. Logically, `"upper_bound"` has to be a higher number than `"lower_bound"`, both numbers
 can be either integers or floating point numbers.
-- `"pause_hotkey"` and `"exit_hotkey"` you can use to pause or exit (terminate) the program
+- `"pause_hotkey"` and `"exit_hotkey"` are used to pause and exit (terminate) the program and
 the value for these has to be a string of characters. This program uses the [keyboard Python library](https://pypi.org/project/keyboard/) 
 as a keyboard listener, you can use their website to understand how to define these hotkeys. Basically, the hotkey can be
 one key (example `"l"`), it can be multiple keys (keys separated by plus, example: `"ctrl+p"`), or a sequence of keys (keys separated 

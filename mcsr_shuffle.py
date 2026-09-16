@@ -1,6 +1,8 @@
+import json
+import re
 import threading
+from json import JSONDecodeError
 
-import pydirectinput
 import win32gui, win32con, win32api
 import win32process
 import random
@@ -9,8 +11,6 @@ import logging
 import datetime
 import keyboard
 from threading import Condition, Timer
-
-from utils import *
 import psutil
 
 from minecraft_instance import MinecraftInstance
@@ -34,7 +34,7 @@ exit_scheduled: bool = False
 def get_minecraft_windows() -> list[MinecraftInstance]:
     ret_list: list[MinecraftInstance] = []
     def callback(hwnd, _):
-        if win32gui.IsWindowVisible(hwnd) != 0 and "Minecraft" in win32gui.GetWindowText(hwnd):
+        if win32gui.IsWindowVisible(hwnd) != 0 and re.match("^Minecraft\\*? .+$", win32gui.GetWindowText(hwnd)):
                 _, pid = win32process.GetWindowThreadProcessId(hwnd)
                 proc = psutil.Process(pid)
                 cmd_line: list[str] = proc.cmdline()
@@ -168,7 +168,7 @@ def run():
     # set up ends on the last instance
     current_window: MinecraftInstance = original_windows[-1]
 
-    switch_timer: Timer = Timer(0, lambda: None)
+    switch_timer: Timer = Timer(0, lambda: None) # assign dummy value so IDE stops crying
 
     # start thread that will check if runs on open instances were completed
     checker_thread = threading.Thread(target=is_complete_checker, args=(original_windows, switch_timer,))
@@ -188,6 +188,7 @@ def run():
         sleep_time: int = random.randint(config["lower_bound"], config["upper_bound"])
         LOGGER.info(f"Sleeping for {sleep_time} seconds...")
         switch_timer = Timer(sleep_time, lambda: None) # this is used as cancellable sleep
+        switch_timer.start()
         switch_timer.join()
         while paused: # yield thread if paused
             time.sleep(0)
@@ -204,9 +205,6 @@ def run():
 
     checker_thread.join()
     switch_timer.join()
-
-def switch_loop(instances: list[MinecraftInstance], config: dict):
-    pass
 
 def is_complete_checker(instances: list[MinecraftInstance], switch_timer: Timer):
     global paused, exit_scheduled
@@ -285,19 +283,6 @@ def activate_window(hwnd):
                 False,
             )
 
-
-def cancel_timer(timer: Timer):
-    time.sleep(3)
-    timer.cancel()
-
 if __name__ == "__main__":
-    #run()
-    t = Timer(10, lambda: print("timer finished!"))
-    t1 = threading.Thread(target=cancel_timer, args=(t,))
-    t.start()
-    print("timer has to finish in order for code under it to run")
-    #t1.start()
-    #print("ahoj")
-    t.join()
-
+    run()
 

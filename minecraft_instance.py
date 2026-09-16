@@ -1,8 +1,10 @@
 from json import JSONDecodeError
 
 from enums import *
-import utils
 import os, json
+
+def starts_with_folder_path_helper(s: str):
+    return s.startswith("-Djava.library.path=")
 
 class MinecraftInstance:
     hwnd: int
@@ -28,7 +30,7 @@ class MinecraftInstance:
                 f"MC version {self.version}, folder path {self.folder_path}. Launched from {self.launcher.value}.")
 
     def get_instance_info_from_cmd_line2(self, cmd_line: list[str]):
-        path_args = list(filter(utils.starts_with_folder_path_helper, cmd_line))
+        path_args = list(filter(starts_with_folder_path_helper, cmd_line))
         if "--gameDir" in cmd_line:
             # either vanilla or color mc (folder path is the same)
             try:

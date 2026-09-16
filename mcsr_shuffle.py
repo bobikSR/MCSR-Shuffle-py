@@ -8,6 +8,7 @@ import time
 import logging
 import datetime
 import keyboard
+from threading import Condition, Timer
 
 from utils import *
 import psutil
@@ -26,6 +27,9 @@ logging.basicConfig(filename=f"logs/{get_log_name()}.log",
 
 LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.DEBUG)
+
+paused: bool = False
+exit_scheduled: bool = False
 
 def get_minecraft_windows() -> list[MinecraftInstance]:
     ret_list: list[MinecraftInstance] = []
@@ -109,7 +113,25 @@ def check_config_dict(cfg: dict) -> bool:
         return False
     return True
 
+def pause_shuffle(switch_timer: Timer):
+    global paused, exit_scheduled
+    if exit_scheduled:
+        return
+    LOGGER.info("Pausing...")
+    paused = True
+    switch_timer.cancel()
+
+def exit_shuffle(switch_timer: Timer):
+    global exit_scheduled, paused
+    LOGGER.info("Exiting...")
+    exit_scheduled = True
+    paused = False
+    switch_timer.cancel()
+
 def run():
+    # set up global vars
+    global paused, exit_scheduled
+
     # load config file into dict
     config: dict
     try:
@@ -138,26 +160,37 @@ def run():
             LOGGER.error("Found only one Minecraft instance, closing program...")
             return
 
-    # set up pause and exist hotkeys
-    keyboard.add_hotkey(config["pause_hotkey"], lambda: print("paused"))
-    keyboard.add_hotkey(config["exit_hotkey"], lambda: print("exited"))
-
     # set up by creating worlds using atum
     set_up(original_windows, config["set_up_key_press_pause"])
 
     # set up ends on the last instance
     current_window: MinecraftInstance = original_windows[-1]
 
+    switch_timer: Timer = Timer(0, lambda: None)
+
     # start thread that will check if runs on open instances were completed
-    checker_thread = threading.Thread(target=is_complete_checker, args=(original_windows,))
+    checker_thread = threading.Thread(target=is_complete_checker, args=(original_windows, switch_timer,))
     checker_thread.start()
+
+    # set up pause and exist hotkeys
+    keyboard.add_hotkey(config["pause_hotkey"], lambda: pause_shuffle(switch_timer))
+    keyboard.add_hotkey(config["exit_hotkey"], lambda: exit_shuffle(switch_timer))
 
     # start switching loop
     while True:
+        while paused: # yield thread if paused
+            time.sleep(0)
+        if exit_scheduled:
+            break
         # sleep for a random amount of time
         sleep_time: int = random.randint(config["lower_bound"], config["upper_bound"])
         LOGGER.info(f"Sleeping for {sleep_time} seconds...")
-        time.sleep(sleep_time)
+        switch_timer = Timer(sleep_time, lambda: None) # this is used as cancellable sleep
+        switch_timer.join()
+        while paused: # yield thread if paused
+            time.sleep(0)
+        if exit_scheduled:
+            break
         # choose a window from possible ones and switch to it
         possible_windows = [inst for inst in original_windows if inst.hwnd != current_window.hwnd and not inst.is_completed]
         if len(possible_windows) < 1:
@@ -168,10 +201,19 @@ def run():
         unpause_after_switch()
 
     checker_thread.join()
+    switch_timer.join()
 
-def is_complete_checker(instances: list[MinecraftInstance]):
+def switch_loop(instances: list[MinecraftInstance], config: dict):
+    pass
+
+def is_complete_checker(instances: list[MinecraftInstance], switch_timer: Timer):
+    global paused, exit_scheduled
     completions: int = 0
     while True:
+        while paused:
+            time.sleep(0)
+        if exit_scheduled:
+            break
         if all([inst.is_completed for inst in instances]):
             break
         for inst in instances:
@@ -182,6 +224,8 @@ def is_complete_checker(instances: list[MinecraftInstance]):
             inst.try_get_is_completed()
             if inst.just_completed:
                 completions += 1
+                keyboard.press_and_release("esc")
+                switch_timer.cancel()
                 LOGGER.info(f"Completed run {completions} on instance with HWND {inst.hwnd}")
 
 def activate_window2(hwnd):
@@ -239,7 +283,19 @@ def activate_window(hwnd):
                 False,
             )
 
+
+def cancel_timer(timer: Timer):
+    time.sleep(3)
+    timer.cancel()
+
 if __name__ == "__main__":
-    run()
+    #run()
+    t = Timer(10, lambda: print("timer finished!"))
+    t1 = threading.Thread(target=cancel_timer, args=(t,))
+    t.start()
+    print("timer has to finish in order for code under it to run")
+    #t1.start()
+    #print("ahoj")
+    t.join()
 
 

@@ -1,3 +1,5 @@
+from json import JSONDecodeError
+
 from enums import *
 import utils
 import os, json
@@ -7,19 +9,23 @@ class MinecraftInstance:
     pid: int
     version: str
     folder_path: str
+    record_json: str
     launcher: Launcher
+    is_completed: bool
 
     def __init__(self, hwnd: int, pid: int, cmd_line: list[str]):
         self.hwnd = hwnd
         self.pid = pid
         self.get_instance_info_from_cmd_line2(cmd_line)
+        self.folder_path.replace("/", "\\")
+        self.is_completed = False
+        self.record_json = ""
 
     def __str__(self):
         return (f"Minecraft instance with HWND {self.hwnd}, PID {self.pid}, "
                 f"MC version {self.version}, folder path {self.folder_path}. Launched from {self.launcher.value}.")
 
     def get_instance_info_from_cmd_line2(self, cmd_line: list[str]):
-        # todo: do it here with the list the psutil method gives, it may even be easier
         path_args = list(filter(utils.starts_with_folder_path_helper, cmd_line))
         if "--gameDir" in cmd_line:
             # either vanilla or color mc (folder path is the same)
@@ -62,6 +68,7 @@ class MinecraftInstance:
         # multimc
         self.launcher = Launcher.MULTIMC
         if len(path_args) != 1:
+            print(path_args)
             raise Exception("Error occurred while trying to parse .minecraft folder! Ambiguous arguments!")
         try:
             natives_folder: str = path_args[0][20:]
@@ -96,6 +103,32 @@ class MinecraftInstance:
         if lines[0].startswith(state):
             return True
         return False
+
+    def try_get_record_json_file(self):
+        if not os.path.isdir(os.path.join(self.folder_path, "saves")):
+            return
+        saves_folder = os.path.join(self.folder_path, "saves")
+        saves = list(sorted([os.path.join(saves_folder, world) for world in os.listdir(saves_folder)], key=os.path.getctime, reverse=True))
+        try:
+            world_folder = saves[0]
+        except IndexError:
+            return
+        if not os.path.isfile(os.path.join(world_folder, "speedrunigt", "record.json")):
+            return
+        self.record_json = os.path.join(world_folder, "speedrunigt", "record.json")
+
+    def try_get_is_completed(self):
+        if not self.record_json:
+            return False
+        if not self.is_completed:
+            try:
+                with open(self.record_json, "r") as record:
+                    data = json.load(record)
+                    self.is_completed = data.get("is_completed", False)
+            except JSONDecodeError:
+                # this means the json file is empty (nothing happened in the world yet)
+                return False
+        return self.is_completed
 
     def get_instance_info_from_cmd_line(self, cmd_line: str):
         if "--gameDir" in cmd_line:

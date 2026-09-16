@@ -1,6 +1,3 @@
 pywin32
-pyautogui
 psutil
-pypsrp
-pygetwindow
 PyDirectInput

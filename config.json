@@ -1,0 +1,8 @@
+{
+  "DEBUG": true,
+  "lower_bound": 5,
+  "upper_bound": 35,
+  "ensure_correct_instance_retry": 0.05,
+  "before_switch_esc_press_pause": 0.015,
+  "set_up_key_press_pause": 0.05
+}

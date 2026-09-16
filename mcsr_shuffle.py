@@ -99,6 +99,8 @@ def check_config_dict(cfg: dict) -> bool:
         return False
     if cfg.get("upper_bound", None) is None:
         return False
+    if cfg["lower_bound"] >= cfg["upper_bound"]:
+        return False
     if cfg.get("pause_hotkey", None) is None:
         return False
     if cfg.get("exit_hotkey", None) is None:

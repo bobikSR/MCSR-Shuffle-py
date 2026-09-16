@@ -1,10 +1,12 @@
 import os
 
 import pyautogui
+import pydirectinput
 import win32gui, win32con, win32api
 import win32process
 import random
 import time
+import pygetwindow as gw
 
 from pywin.scintilla.bindings import assign_command_id
 
@@ -18,8 +20,14 @@ from minecraft_instance import MinecraftInstance
 # TODO: LOOK INTO HOW JULTI GOT FOLDERS FROM WINDOWS AND COPY IT
 # TODO: THREAD THAT LOOKS AT EVERY WINDOWS SPEEDRUNIGT OUTPUT
 
+"""
+OK HERES HOW TO GET SRIGT EVENT - GO TO FOLDER PATH - THEN IN SAVES GET THE LATEST FOLDER (SOME SORTING IDK, BY NAME OR LAST MODIFIED, OR CREATION DATE)
+THEN IN THAT WORLD SAVE FOLDER, THERES A SPEEDRUNIGT FOLDER WHICH HAS AN EVENTS.LOG FILE, IN THIS FILE SRIGT WILL WRITE EVENTS, SUCH AS KILLING THE DRAGON
+"""
+
 
 ALT_KEY = "altleft"
+DEBUG = True
 
 def get_minecraft_windows() -> list[MinecraftInstance]:
     ret_list: list[MinecraftInstance] = []
@@ -40,46 +48,62 @@ def get_random_window(instances: list[MinecraftInstance]) -> MinecraftInstance:
 def random_win_to_foreground(instances: list[MinecraftInstance]) -> MinecraftInstance:
     chosen_instance = get_random_window(instances)
     print(f"Setting window with HWND {chosen_instance.hwnd} to foreground...")
-    activate_window(chosen_instance.hwnd)
+    activate_window2(chosen_instance.hwnd)
     return chosen_instance
 
 def on_before_switch(instance: MinecraftInstance):
-    if is_in_state(instance, "inworld,gamescreenopen"):
-        pyautogui.press("esc", 2, 30)
+    if instance.is_in_state("inworld,gamescreenopen"):
+        pydirectinput.press("esc", 2, 0.01)
     return
 
 def set_up(instances: list[MinecraftInstance]):
+    # first create world using atum
     for inst in instances:
-        if is_in_state(inst, "title"):
-            print("in title")
-            activate_window(inst.hwnd)
-            pyautogui.press("tab")
+        if inst.is_in_state("title"):
+            activate_window2(inst.hwnd)
             time.sleep(0.1)
-            pyautogui.press("enter")
+            pydirectinput.keyDown("shift")
+            pydirectinput.press("tab")
+            pydirectinput.keyUp("shift")
+            time.sleep(0.1)
+            pydirectinput.press("enter")
+    # then end this with waiting for every world to stop generating
+    time.sleep(0.1)
+    while all(not inst.is_in_state("inworld") for inst in instances):
+        time.sleep(0)
+    print("Set up done!")
+
 
 
 def run():
     original_windows: list[MinecraftInstance] = get_minecraft_windows()
-    #if len(original_windows) < 2:
-    #   return
+    print(f"Found {len(original_windows)} open Minecraft windows.")
+    if not DEBUG:
+        if len(original_windows) < 2:
+           return
     finished_windows: list[int] = []
     set_up(original_windows)
-
-    print(f"Found {len(original_windows)} open Minecraft windows.")
 
     if len(original_windows) == 0:
         return
 
     current_window: MinecraftInstance = random_win_to_foreground(original_windows)
 
-    while(True):
+    while True:
         sleep_time: int = random.randint(5, 35)
         print(f"Sleeping for {sleep_time} seconds...")
         time.sleep(sleep_time)
         possible_windows = [inst for inst in original_windows if inst.hwnd != current_window.hwnd]
-        if len(possible_windows) > 1:
-            on_before_switch(current_window)
-            current_window = random_win_to_foreground([inst for inst in original_windows if inst.hwnd != current_window.hwnd])
+        if len(possible_windows) <= 1:
+            return
+        on_before_switch(current_window)
+        current_window = random_win_to_foreground([inst for inst in original_windows if inst.hwnd != current_window.hwnd])
+
+def activate_window2(hwnd):
+    #if win32gui.IsIconic(hwnd):
+    win32gui.ShowWindow(hwnd, win32con.SW_SHOWMAXIMIZED)
+    win32gui.SetForegroundWindow(hwnd)
+
 
 def activate_window(hwnd):
     foreground = win32gui.GetForegroundWindow()
@@ -133,3 +157,5 @@ def activate_window(hwnd):
 
 if __name__ == "__main__":
     run()
+
+

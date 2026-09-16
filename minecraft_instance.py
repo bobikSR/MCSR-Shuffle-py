@@ -88,6 +88,15 @@ class MinecraftInstance:
         self.version = "1.16.1"
         return
 
+    def is_in_state(self, state: str):
+        with open(os.path.join(self.folder_path, "wpstateout.txt"), "r") as state_output:
+            lines = list(state_output.readlines())
+        if len(lines) != 1:
+            return False
+        if lines[0].startswith(state):
+            return True
+        return False
+
     def get_instance_info_from_cmd_line(self, cmd_line: str):
         if "--gameDir" in cmd_line:
             # either vanilla or color mc (folder path is the same)

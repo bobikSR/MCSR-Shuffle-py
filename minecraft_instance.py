@@ -12,6 +12,7 @@ class MinecraftInstance:
     record_json: str
     launcher: Launcher
     is_completed: bool
+    just_completed: bool
 
     def __init__(self, hwnd: int, pid: int, cmd_line: list[str]):
         self.hwnd = hwnd
@@ -19,6 +20,7 @@ class MinecraftInstance:
         self.get_instance_info_from_cmd_line2(cmd_line)
         self.folder_path.replace("/", "\\")
         self.is_completed = False
+        self.just_completed = False
         self.record_json = ""
 
     def __str__(self):
@@ -118,6 +120,8 @@ class MinecraftInstance:
         self.record_json = os.path.join(world_folder, "speedrunigt", "record.json")
 
     def try_get_is_completed(self):
+        if self.just_completed:
+            self.just_completed = False
         if not self.record_json:
             return False
         if not self.is_completed:
@@ -125,6 +129,8 @@ class MinecraftInstance:
                 with open(self.record_json, "r") as record:
                     data = json.load(record)
                     self.is_completed = data.get("is_completed", False)
+                    if self.is_completed:
+                        self.just_completed = True
             except JSONDecodeError:
                 # this means the json file is empty (nothing happened in the world yet)
                 return False

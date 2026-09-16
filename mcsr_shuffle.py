@@ -6,6 +6,7 @@ import win32process
 import random
 import time
 import logging
+import datetime
 
 from utils import *
 import psutil
@@ -15,11 +16,15 @@ from minecraft_instance import MinecraftInstance
 # nopeaceful pre 1.14 https://github.com/contariaa/NoPeaceful-Pre1.14
 # nopeaceful https://github.com/VoidXWalker/NoPeaceful/releases
 
-logging.basicConfig(filename="logs/shuffle.log",
+def get_log_name() -> str:
+    return f"{datetime.datetime.now().strftime('%d-%m-%Y-%H-%M-%S')}"
+
+logging.basicConfig(filename=f"logs/{get_log_name()}.log",
                     format='%(asctime)s %(levelname)s: %(message)s',
                     filemode='w')
 
 LOGGER = logging.getLogger()
+LOGGER.setLevel(logging.DEBUG)
 
 def get_minecraft_windows() -> list[MinecraftInstance]:
     ret_list: list[MinecraftInstance] = []
@@ -134,6 +139,7 @@ def run():
     checker_thread.join()
 
 def is_complete_checker(instances: list[MinecraftInstance]):
+    completions: int = 0
     while True:
         if all([inst.is_completed for inst in instances]):
             break
@@ -143,6 +149,9 @@ def is_complete_checker(instances: list[MinecraftInstance]):
             if not inst.record_json or inst.record_json == "":
                 continue
             inst.try_get_is_completed()
+            if inst.just_completed:
+                completions += 1
+                LOGGER.info(f"Completed run {completions} on instance with HWND {inst.hwnd}")
 
 def activate_window2(hwnd):
     win32gui.ShowWindow(hwnd, win32con.SW_SHOWMAXIMIZED)

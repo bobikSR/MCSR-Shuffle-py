@@ -7,6 +7,7 @@ import random
 import time
 import logging
 import datetime
+import keyboard
 
 from utils import *
 import psutil
@@ -50,11 +51,13 @@ def random_win_to_foreground(instances: list[MinecraftInstance]) -> MinecraftIns
 
 def on_before_switch(instance: MinecraftInstance, sleep_time: float):
     # press esc until player is in world and unpaused in any way (pause menu, chat, inv)
+    # and let pause on lost focus handle pausing
     while True:
         # pause on lost focus will take care of this
         if instance.is_in_state("inworld,unpaused"):
             break
-        pydirectinput.press("esc", 1)
+        keyboard.release("ctrl") # to avoid pressing ctrl+esc, which brings up win search bar
+        keyboard.press_and_release("esc")
         time.sleep(sleep_time)
     return
 
@@ -62,8 +65,8 @@ def on_before_switch(instance: MinecraftInstance, sleep_time: float):
 
 def unpause_after_switch():
     # happy path is that before this runs MC will be on the basic pause screen
-    pydirectinput.press("tab", 1)
-    pydirectinput.press("enter", 1)
+    keyboard.release("shift") # prevention of shift+tab
+    keyboard.press_and_release("tab, enter")
 
 def set_up(instances: list[MinecraftInstance], sleep_time: float):
     # first create worlds using atum
@@ -71,14 +74,12 @@ def set_up(instances: list[MinecraftInstance], sleep_time: float):
         if inst.is_in_state("title"):
             activate_window2(inst.hwnd)
             time.sleep(sleep_time)
-            pydirectinput.keyDown("shift")
-            pydirectinput.press("tab")
-            pydirectinput.keyUp("shift")
+            keyboard.press_and_release("shift+tab")
             time.sleep(sleep_time)
-            pydirectinput.press("enter")
+            keyboard.press_and_release("enter")
     # then end this with waiting for every world to stop generating
-    while not all(inst.is_in_state("inworld") for inst in instances):
-        time.sleep(0) # this is basically thread.yield
+    while not all([inst.is_in_state("inworld") for inst in instances]):
+        time.sleep(0) # this is basically thread.yield (apparently)
     LOGGER.info("Set up done!")
 
 def ensure_correct_window(instance: MinecraftInstance, sleep_time: float):
@@ -86,14 +87,40 @@ def ensure_correct_window(instance: MinecraftInstance, sleep_time: float):
         time.sleep(sleep_time) # os can take a little bit for GetForegroundWindow() to return the real FG win hwnd
         if instance.hwnd == win32gui.GetForegroundWindow():
             break
-        LOGGER.info(f"Correcting foreground window to {instance.hwnd}...")
+        LOGGER.warning(f"Correcting foreground window to {instance.hwnd}...")
         activate_window2(instance.hwnd)
+
+def check_config_dict(cfg: dict) -> bool:
+    if cfg.get("lower_bound", None) is None:
+        return False
+    if cfg.get("upper_bound", None) is None:
+        return False
+    if cfg.get("pause_hotkey", None) is None:
+        return False
+    if cfg.get("exit_hotkey", None) is None:
+        return False
+    if cfg.get("ensure_correct_instance_retry", None) is None:
+        return False
+    if cfg.get("before_switch_esc_press_pause", None) is None:
+        return False
+    if cfg.get("set_up_key_press_pause", None) is None:
+        return False
+    if cfg.get("DEBUG", None) is None:
+        return False
+    return True
 
 def run():
     # load config file into dict
     config: dict
-    with open("config.json") as cfg:
-        config = json.load(cfg)
+    try:
+        with open("config.json", "r") as cfg:
+            config = json.load(cfg)
+    except JSONDecodeError:
+        LOGGER.error("Couldn't read config.json! Maybe it's empty?")
+        return
+    if not check_config_dict(config):
+        LOGGER.error("config.json doesn't have all the necessary items!")
+        return
 
     # get all open minecraft windows
     original_windows: list[MinecraftInstance] = []
@@ -110,6 +137,10 @@ def run():
         if len(original_windows) < 2:
             LOGGER.error("Found only one Minecraft instance, closing program...")
             return
+
+    # set up pause and exist hotkeys
+    keyboard.add_hotkey(config["pause_hotkey"], lambda: print("paused"))
+    keyboard.add_hotkey(config["exit_hotkey"], lambda: print("exited"))
 
     # set up by creating worlds using atum
     set_up(original_windows, config["set_up_key_press_pause"])

@@ -73,3 +73,11 @@ program switches windows wrong, try increasing these values. These values have t
 numbers and they are seconds.
 - `"DEBUG"` is used for debugging purposes, as of now, the only thing that changes when this value 
 is changed to `true`, the program will allow to run only one instance.
+
+## Testing
+
+If you want to test the program, you are welcome to do so. If during your testing you happen to find any 
+issues, please create an Issue [here](https://github.com/bobikSR/MCSRShuffle/issues). In the description of the 
+issue please explain the issue, please also include some information about your device and its specs (OS, CPU, GPU, RAM, etc.). 
+Lastly try to include some information about the instances you ran and how they were configured (how many, what versions, what mods did you 
+use, windowed/borderless, if you used ToolScreen, etc.)

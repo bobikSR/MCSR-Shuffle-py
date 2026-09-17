@@ -119,8 +119,8 @@ def pause_shuffle(switch_timer: Timer):
     global paused, exit_scheduled
     if exit_scheduled:
         return
-    LOGGER.info("Pausing...")
-    paused = True
+    paused = not paused
+    LOGGER.info(f"{'Unp' if not paused else 'P'}ausing...")
     switch_timer.cancel()
 
 def exit_shuffle(switch_timer: Timer):

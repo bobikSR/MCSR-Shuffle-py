@@ -75,8 +75,8 @@ def unpause_after_switch():
 def set_up(instances: list[MinecraftInstance], sleep_time: float):
     # first create worlds using atum
     for inst in instances:
+        activate_window2(inst.hwnd)
         if inst.is_in_state("title"):
-            activate_window2(inst.hwnd)
             time.sleep(sleep_time)
             keyboard.press_and_release("shift+tab")
             time.sleep(sleep_time)
@@ -85,6 +85,7 @@ def set_up(instances: list[MinecraftInstance], sleep_time: float):
     while not all([inst.is_in_state("inworld") for inst in instances]):
         time.sleep(0) # this is basically thread.yield (apparently)
     LOGGER.info("Set up done!")
+    print("Set up done!")
 
 def ensure_correct_window(instance: MinecraftInstance, sleep_time: float):
     while True:
@@ -121,11 +122,13 @@ def pause_shuffle(switch_timer: Timer):
         return
     paused = not paused
     LOGGER.info(f"{'Unp' if not paused else 'P'}ausing...")
+    print(f"{'Unp' if not paused else 'P'}ausing...")
     switch_timer.cancel()
 
 def exit_shuffle(switch_timer: Timer):
     global exit_scheduled, paused
     LOGGER.info("Exiting...")
+    print("Exiting...")
     exit_scheduled = True
     paused = False
     switch_timer.cancel()
@@ -152,14 +155,17 @@ def run():
         original_windows = get_minecraft_windows()
     except Exception as e:
         LOGGER.error(str(e))
-    LOGGER.info(f"Found {len(original_windows)} open Minecraft windows.")
+    LOGGER.info(f"Found {len(original_windows)} open Minecraft window{'s' if len(original_windows) != 1 else ''}.")
+    print(f"Found {len(original_windows)} open Minecraft window{'s' if len(original_windows) != 1 else ''}.")
     if len(original_windows) == 0:
         LOGGER.error("Found 0 open Minecraft instances, closing program...")
+        print("Found 0 open Minecraft instances, closing program...")
         return
     if not config["DEBUG"]:
         # if only one instance is open, the shuffle makes no sense
         if len(original_windows) < 2:
             LOGGER.error("Found only one Minecraft instance, closing program...")
+            print("Found only one Minecraft instance, closing program...")
             return
 
     # set up by creating worlds using atum
@@ -167,6 +173,8 @@ def run():
 
     # set up ends on the last instance
     current_window: MinecraftInstance = original_windows[-1]
+    if current_window.is_in_state("inworld,paused"):
+        on_before_switch(current_window, config["before_switch_esc_press_pause"])
 
     switch_timer: Timer = Timer(0, lambda: None) # assign dummy value so IDE stops crying
 
@@ -227,6 +235,7 @@ def is_complete_checker(instances: list[MinecraftInstance], switch_timer: Timer)
                 keyboard.press_and_release("esc")
                 switch_timer.cancel()
                 LOGGER.info(f"Completed run {completions} on instance with HWND {inst.hwnd}")
+                print(f"Completed run {completions} on instance with HWND {inst.hwnd}")
 
 def activate_window2(hwnd):
     win32gui.ShowWindow(hwnd, win32con.SW_SHOWMAXIMIZED)

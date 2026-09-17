@@ -15,6 +15,8 @@ class MinecraftInstance:
     launcher: Launcher
     is_completed: bool
     just_completed: bool
+    final_igt_ms: int | None
+    final_rta_ms: int | None
 
     def __init__(self, hwnd: int, pid: int, cmd_line: list[str]):
         self.hwnd = hwnd
@@ -24,6 +26,8 @@ class MinecraftInstance:
         self.is_completed = False
         self.just_completed = False
         self.record_json = ""
+        self.final_igt_ms = None
+        self.final_rta_ms = None
 
     def __str__(self):
         return (f"Minecraft instance with HWND {self.hwnd}, PID {self.pid}, "
@@ -133,6 +137,8 @@ class MinecraftInstance:
                     self.is_completed = data.get("is_completed", False)
                     if self.is_completed:
                         self.just_completed = True
+                        self.final_igt_ms = data.get("final_igt", None)
+                        self.final_rta_ms = data.get("final_rta", None)
             except JSONDecodeError:
                 # this means the json file is empty (nothing happened in the world yet)
                 return False

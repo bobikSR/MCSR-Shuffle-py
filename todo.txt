@@ -1,7 +1,6 @@
 TODO:
 Add logging final IGT and RTA - IGT = sum, RTA = highest RTA
 Add synchronization
-Make it possible to run the program while already being in a world
 
 TO TEST:
 Running the program with different versions open (e.g. 2x 1.16.1 and a 1.7.10 instance)

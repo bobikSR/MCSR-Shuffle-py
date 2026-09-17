@@ -37,10 +37,13 @@ times you want.
 ## Usage
 
 To use the program, run however many instances you want (more than one), wait for them to be loaded (on
-the title screen) and run the program **as administrator**. The program will stop itself once
+the title screen) and run the program **as administrator**. You can also run the program while you are already loaded
+in a world on any or all of the instances (meaning SSG is possible, this way you can also re-run the
+program if it breaks for some reason). The program will stop itself once
 you've finished the game on all the instances. You can also pause or terminate the program using a
 hotkey. The program has no GUI, however, everything happening will be saved into a `.log` file located
-in the `logs` folder identifiable by the start time of the program.
+in the `logs` folder identifiable by the start time of the program. A console will also appear on start in which
+limited information about the run will be displayed.
 
 DO NOT RUN MINECRAFT IN FULSCREEN!!! USE EITHER WINDOWED OR BORDERLESS!!!
 

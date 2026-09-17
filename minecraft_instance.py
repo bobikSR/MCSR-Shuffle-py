@@ -116,7 +116,7 @@ class MinecraftInstance:
         if not os.path.isdir(os.path.join(self.folder_path, "saves")):
             return
         saves_folder = os.path.join(self.folder_path, "saves")
-        saves = list(sorted([os.path.join(saves_folder, world) for world in os.listdir(saves_folder)], key=os.path.getctime, reverse=True))
+        saves = list(sorted([os.path.join(saves_folder, world) for world in os.listdir(saves_folder)], key=os.path.getmtime, reverse=True))
         try:
             world_folder = saves[0]
         except IndexError:

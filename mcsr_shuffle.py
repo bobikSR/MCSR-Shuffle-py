@@ -133,6 +133,23 @@ def exit_shuffle(switch_timer: Timer):
     paused = False
     switch_timer.cancel()
 
+def get_time_str_from_ms(milis: int) -> str:
+    # example: milis = 61000, secs = 61, mins = 1
+    secs = milis // 1000
+    ms = milis % 1000
+    mins = secs // 60
+    secs = secs % 60
+    hrs = mins // 60
+    mins = mins % 60
+    if hrs > 0:
+        return f"{hrs:02d}:{mins:02d}:{secs:02d}.{ms:03d}"
+    return f"{mins:02d}:{secs:02d}.{ms:03d}"
+
+def get_final_times(instances: list[MinecraftInstance]) -> tuple[str, str]:
+    final_rta_ms = max([inst.final_rta_ms if inst.final_rta_ms is not None else 0 for inst in instances])
+    final_igt_ms = sum([inst.final_rta_ms if inst.final_igt_ms is not None else 0 for inst in instances])
+    return get_time_str_from_ms(final_rta_ms), get_time_str_from_ms(final_igt_ms)
+
 def run():
     # set up global vars
     global paused, exit_scheduled
@@ -153,6 +170,10 @@ def run():
     original_windows: list[MinecraftInstance] = []
     try:
         original_windows = get_minecraft_windows()
+        for window in original_windows:
+            window.try_get_record_json_file()
+            window.try_get_is_completed()
+        original_windows = list(filter(lambda inst: not inst.is_completed, original_windows))
     except Exception as e:
         LOGGER.error(str(e))
     LOGGER.info(f"Found {len(original_windows)} open Minecraft window{'s' if len(original_windows) != 1 else ''}.")
@@ -213,6 +234,11 @@ def run():
 
     checker_thread.join()
     switch_timer.join()
+
+    if all([inst.is_completed for inst in original_windows]):
+        final_rta, total_igt = get_final_times(original_windows)
+        LOGGER.info(f"Completed MCSR Shuffle with total IGT of {total_igt} and final RTA of {final_rta}")
+        print(f"Completed MCSR Shuffle with total IGT of {total_igt} and final RTA of {final_rta}")
 
 def is_complete_checker(instances: list[MinecraftInstance], switch_timer: Timer):
     global paused, exit_scheduled

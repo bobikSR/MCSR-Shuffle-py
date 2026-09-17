@@ -53,7 +53,13 @@ If you want to use ToolScreen you will have to do a little more while launching 
 is because ToolScreen only works on the first instance (as of 16. Sept 2026) you launch, but not on any instances launched after
 (this is true at least for MultiMC). To make sure ToolScreen is active on all the opened instances, you have to
 navigate to `C:/Users/<your_username>/.config/toolscreen/dlls` and between launching each instance,  
-rename both `.dll` files in that folder. 
+rename both `.dll` files in that folder. Also, if you happen to use tab, escape, shift or enter as your ToolScreen hotkeys
+, you might have to change the required game states for these hotkeys in ToolScreen settings. To help you understand what to set the
+required game states to:
+- tab is pressed on the title screen and in the pause menu screen
+- escape is pressed while in world and unpaused (cursor grabbed)
+- shift is pressed on the title screen
+- enter is pressed on the title screen and in the pause menu screen
 
 ### Configuration
 
@@ -68,19 +74,19 @@ can be either integers or floating point numbers.
 the value for these has to be a string of characters. This program uses the [keyboard Python library](https://pypi.org/project/keyboard/) 
 as a keyboard listener, you can use their website to understand how to define these hotkeys. Basically, the hotkey can be
 one key (example `"l"`), it can be multiple keys (keys separated by plus, example: `"ctrl+p"`), or a sequence of keys (keys separated 
-by a comma and a space, example `"tab, p"`). The hotkeys can't be these: `"esc"`, `"tab"`, `"enter"`, `"shift"` or any other keys that might interfere
-with your gameplay if used as hotkeys.
+by a comma and a space, example `"tab, p"`). The hotkeys can't be these: `"esc"`, `"tab"`, `"enter"`, `"shift"`, `"shift+tab"`or any 
+other keys that might interfere with your gameplay if used as hotkeys.
 - `"ensure_correct_instance_retry"`, `"before_switch_esc_press_pause"`, `"set_up_key_press_pause"` are all 
 settings for pauses in between key presses, if you're having troubles running the program or if the
 program switches windows wrong, try increasing these values. These values have to be integers or floating point
-numbers and they are seconds.
+numbers, and they are mean how long will the pause be in seconds.
 - `"DEBUG"` is used for debugging purposes, as of now, the only thing that changes when this value 
 is changed to `true`, the program will allow to run only one instance.
 
 ## Testing
 
 If you want to test the program, you are welcome to do so. If during your testing you happen to find any 
-issues, please create an Issue [here](https://github.com/bobikSR/MCSRShuffle/issues). In the description of the 
+issues, please create an Issue [here](https://github.com/bobikSR/MCSR-Shuffle-py). In the description of the 
 issue please explain the issue, please also include some information about your device and its specs (OS, CPU, GPU, RAM, etc.). 
 Lastly try to include some information about the instances you ran and how they were configured (how many, what versions, what mods did you 
 use, windowed/borderless, if you used ToolScreen, etc.)

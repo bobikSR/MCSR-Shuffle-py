@@ -22,7 +22,7 @@ has SpeedrunIGT and Atum and make sure it doesn't have SeedQueue. I also recommn
 installing all the other mods allowed for speedrunning for performance's sake (you can download 
 the mods from the official [MCSR mod list](https://mc.sr/mods/)). For quality of life I 
 also advise you to install the [No Peaceful](https://github.com/VoidXWalker/NoPeaceful/releases) 
-mod and also a mod I made called [MCSR Shuffle helper](https://github.com/VoidXWalker/NoPeaceful/releases),
+mod and also a mod I made called [MCSR Shuffle helper](https://github.com/bobikSR/mcsr-shuffle-helper/releases),
  both of these mods basically just act as misclick prevention.
 
 If you have decided to install other mods made for speedrunning, including SpeedrunAPI and StandardSettings,

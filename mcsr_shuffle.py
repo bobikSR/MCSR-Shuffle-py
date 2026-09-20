@@ -29,7 +29,10 @@ LOGGER = logging.getLogger()
 LOGGER.setLevel(logging.DEBUG)
 
 paused: bool = False
+paused_time: float = 0.0
 exit_scheduled: bool = False
+config: dict
+
 
 def get_minecraft_windows() -> list[MinecraftInstance]:
     ret_list: list[MinecraftInstance] = []
@@ -53,7 +56,8 @@ def random_win_to_foreground(instances: list[MinecraftInstance]) -> MinecraftIns
     activate_window2(chosen_instance.hwnd)
     return chosen_instance
 
-def on_before_switch(instance: MinecraftInstance, sleep_time: float):
+def on_before_switch(instance: MinecraftInstance):
+    global config
     # press esc until player is in world and unpaused in any way (pause menu, chat, inv)
     # and let pause on lost focus handle pausing
     while True:
@@ -62,7 +66,7 @@ def on_before_switch(instance: MinecraftInstance, sleep_time: float):
             break
         keyboard.release("ctrl") # to avoid pressing ctrl+esc, which brings up win search bar
         keyboard.press_and_release("esc")
-        time.sleep(sleep_time)
+        time.sleep(config["before_switch_esc_press_pause"])
     return
 
 # if i force unpaused -> pause on lost focus will pause -> then i can just tab -> enter to unpause
@@ -72,18 +76,23 @@ def unpause_after_switch():
     keyboard.release("shift") # prevention of shift+tab
     keyboard.press_and_release("tab, enter")
 
-def set_up(instances: list[MinecraftInstance], sleep_time: float):
+def set_up(instances: list[MinecraftInstance]):
+    global config
     # first create worlds using atum
     for inst in instances:
         activate_window2(inst.hwnd)
         if inst.is_in_state("title"):
-            time.sleep(sleep_time)
+            time.sleep(config["set_up_key_press_pause"])
             keyboard.press_and_release("shift+tab")
-            time.sleep(sleep_time)
+            time.sleep(config["set_up_key_press_pause"])
             keyboard.press_and_release("enter")
+            if not config["parallel_world_gen"]: # if parallel is false, wait for each world to be generated before generating the next one
+                while not inst.is_in_state("inworld"):
+                    time.sleep(0)
     # then end this with waiting for every world to stop generating
-    while not all([inst.is_in_state("inworld") for inst in instances]):
-        time.sleep(0) # this is basically thread.yield (apparently)
+    if config["parallel_world_gen"]:
+        while not all([inst.is_in_state("inworld") for inst in instances]):
+            time.sleep(0) # this is basically thread.yield (apparently)
     LOGGER.info("Set up done!")
     print("Set up done!")
 
@@ -95,35 +104,38 @@ def ensure_correct_window(instance: MinecraftInstance, sleep_time: float):
         LOGGER.warning(f"Correcting foreground window to {instance.hwnd}...")
         activate_window2(instance.hwnd)
 
-def check_config_dict(cfg: dict) -> bool:
-    if cfg.get("lower_bound", None) is None:
+def check_config_dict() -> bool:
+    global config
+    if config.get("lower_bound", None) is None:
         return False
-    if cfg.get("upper_bound", None) is None:
+    if config.get("upper_bound", None) is None:
         return False
-    if cfg["lower_bound"] >= cfg["upper_bound"]:
+    if config["lower_bound"] >= config["upper_bound"]:
         return False
-    if cfg.get("pause_hotkey", None) is None:
+    if config.get("pause_hotkey", None) is None:
         return False
-    if cfg.get("exit_hotkey", None) is None:
+    if config.get("exit_hotkey", None) is None:
         return False
-    if cfg.get("ensure_correct_instance_retry", None) is None:
+    if config.get("ensure_correct_instance_retry", None) is None:
         return False
-    if cfg.get("before_switch_esc_press_pause", None) is None:
+    if config.get("before_switch_esc_press_pause", None) is None:
         return False
-    if cfg.get("set_up_key_press_pause", None) is None:
+    if config.get("set_up_key_press_pause", None) is None:
         return False
-    if cfg.get("DEBUG", None) is None:
+    if config.get("DEBUG", None) is None:
         return False
     return True
 
 def pause_shuffle(switch_timer: Timer):
-    global paused, exit_scheduled
+    global paused, exit_scheduled, paused_time
     if exit_scheduled:
         return
     paused = not paused
     LOGGER.info(f"{'Unp' if not paused else 'P'}ausing...")
     print(f"{'Unp' if not paused else 'P'}ausing...")
-    switch_timer.cancel()
+    if paused:
+        paused_time = time.time()
+        switch_timer.cancel()
 
 def exit_shuffle(switch_timer: Timer):
     global exit_scheduled, paused
@@ -152,17 +164,16 @@ def get_final_times(instances: list[MinecraftInstance]) -> tuple[str, str]:
 
 def run():
     # set up global vars
-    global paused, exit_scheduled
+    global paused, exit_scheduled, paused_time, config
 
     # load config file into dict
-    config: dict
     try:
         with open("config.json", "r") as cfg:
             config = json.load(cfg)
     except JSONDecodeError:
         LOGGER.error("Couldn't read config.json! Maybe it's empty?")
         return
-    if not check_config_dict(config):
+    if not check_config_dict():
         LOGGER.error("config.json doesn't have all the necessary items!")
         return
 
@@ -171,8 +182,9 @@ def run():
     try:
         original_windows = get_minecraft_windows()
         for window in original_windows:
-            window.try_get_record_json_file()
-            window.try_get_is_completed()
+            if window.is_in_state("inworld"):
+                window.try_get_record_json_file()
+                window.try_get_is_completed()
         original_windows = list(filter(lambda inst: not inst.is_completed, original_windows))
     except Exception as e:
         LOGGER.error(str(e))
@@ -190,12 +202,12 @@ def run():
             return
 
     # set up by creating worlds using atum
-    set_up(original_windows, config["set_up_key_press_pause"])
+    set_up(original_windows)
 
     # set up ends on the last instance
     current_window: MinecraftInstance = original_windows[-1]
     if current_window.is_in_state("inworld,paused"):
-        on_before_switch(current_window, config["before_switch_esc_press_pause"])
+        on_before_switch(current_window)
 
     switch_timer: Timer = Timer(0, lambda: None) # assign dummy value so IDE stops crying
 
@@ -208,26 +220,40 @@ def run():
     keyboard.add_hotkey(config["exit_hotkey"], lambda: exit_shuffle(switch_timer))
 
     # start switching loop
+    sleep_time: int
+    sleep_start_time: float
+    remaining_sleep_after_pause: float= 0.0
     while True:
         while paused: # yield thread if paused
             time.sleep(0)
         if exit_scheduled:
             break
         # sleep for a random amount of time
-        sleep_time: int = random.randint(config["lower_bound"], config["upper_bound"])
+        sleep_time = random.randint(config["lower_bound"], config["upper_bound"])
+        if remaining_sleep_after_pause > 0.0:
+            sleep_time = int(remaining_sleep_after_pause)
+            remaining_sleep_after_pause = 0.0
+            print(f"Sleeping for {sleep_time} after pause...")
         LOGGER.info(f"Sleeping for {sleep_time} seconds...")
+        sleep_start_time = time.time()
         switch_timer = Timer(sleep_time, lambda: None) # this is used as cancellable sleep
         switch_timer.start()
         switch_timer.join()
         while paused: # yield thread if paused
             time.sleep(0)
+        if paused_time > 0.0:
+            time_slept = paused_time - sleep_start_time
+            remaining_sleep_after_pause = sleep_time - time_slept
+            paused_time = 0.0
+            if remaining_sleep_after_pause > 0.0:
+                continue
         if exit_scheduled:
             break
         # choose a window from possible ones and switch to it
         possible_windows = [inst for inst in original_windows if inst.hwnd != current_window.hwnd and not inst.is_completed]
         if len(possible_windows) < 1:
             break
-        on_before_switch(current_window, config["before_switch_esc_press_pause"])
+        on_before_switch(current_window)
         current_window = random_win_to_foreground(possible_windows)
         ensure_correct_window(current_window, config["ensure_correct_instance_retry"])
         unpause_after_switch()

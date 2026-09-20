@@ -1,5 +1,5 @@
 TODO:
-Add logging final IGT and RTA - IGT = sum, RTA = highest RTA
+look into why so many esc presses - state output takes a while to correct the state, add sleep time make before_switch_esc_press_pause bigger and check - todo test
 Add synchronization
 
 TO TEST:

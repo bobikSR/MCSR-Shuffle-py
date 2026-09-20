@@ -233,7 +233,6 @@ def run():
         if remaining_sleep_after_pause > 0.0:
             sleep_time = int(remaining_sleep_after_pause)
             remaining_sleep_after_pause = 0.0
-            print(f"Sleeping for {sleep_time} after pause...")
         LOGGER.info(f"Sleeping for {sleep_time} seconds...")
         sleep_start_time = time.time()
         switch_timer = Timer(sleep_time, lambda: None) # this is used as cancellable sleep

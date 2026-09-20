@@ -1,6 +1,7 @@
 TODO:
 look into why so many esc presses - state output takes a while to correct the state, add sleep time make before_switch_esc_press_pause bigger and check - todo test
 Add synchronization
+make a set up video tutorial
 
 TO TEST:
 Running the program with different versions open (e.g. 2x 1.16.1 and a 1.7.10 instance)

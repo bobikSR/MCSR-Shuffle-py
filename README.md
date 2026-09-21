@@ -44,8 +44,7 @@ in a world on any or all of the instances (meaning SSG is possible, this way you
 program if it breaks for some reason). The program will stop itself once
 you've finished the game on all the instances. You can also pause or terminate the program using a
 hotkey. The program has no GUI, however, everything happening will be saved into a `.log` file located
-in the `logs` folder identifiable by the start time of the program. A console will also appear on start in which
-limited information about the run will be displayed.
+in the `logs` folder identifiable by the start time of the program.
 
 DO NOT RUN MINECRAFT IN FULSCREEN!!! USE EITHER WINDOWED OR BORDERLESS!!!
 

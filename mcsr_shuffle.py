@@ -3,14 +3,14 @@ import re
 import threading
 from json import JSONDecodeError
 
-import win32gui, win32con, win32api
+import win32gui, win32con
 import win32process
 import random
 import time
 import logging
 import datetime
 import keyboard
-from threading import Condition, Timer
+from threading import Timer
 import psutil
 
 from minecraft_instance import MinecraftInstance
@@ -53,7 +53,7 @@ def get_random_window(instances: list[MinecraftInstance]) -> MinecraftInstance:
 def random_win_to_foreground(instances: list[MinecraftInstance]) -> MinecraftInstance:
     chosen_instance = get_random_window(instances)
     LOGGER.info(f"Setting window with HWND {chosen_instance.hwnd} to foreground...")
-    activate_window2(chosen_instance.hwnd)
+    activate_window(chosen_instance.hwnd)
     return chosen_instance
 
 def on_before_switch(instance: MinecraftInstance):
@@ -80,7 +80,7 @@ def set_up(instances: list[MinecraftInstance]):
     global config
     # first create worlds using atum
     for inst in instances:
-        activate_window2(inst.hwnd)
+        activate_window(inst.hwnd)
         if inst.is_in_state("title"):
             time.sleep(config["set_up_key_press_pause"])
             keyboard.press_and_release("shift+tab")
@@ -102,7 +102,7 @@ def ensure_correct_window(instance: MinecraftInstance, sleep_time: float):
         if instance.hwnd == win32gui.GetForegroundWindow():
             break
         LOGGER.warning(f"Correcting foreground window to {instance.hwnd}...")
-        activate_window2(instance.hwnd)
+        activate_window(instance.hwnd)
 
 def check_config_dict() -> bool:
     global config
@@ -288,60 +288,9 @@ def is_complete_checker(instances: list[MinecraftInstance], switch_timer: Timer)
                 LOGGER.info(f"Completed run {completions} on instance with HWND {inst.hwnd}")
                 print(f"Completed run {completions} on instance with HWND {inst.hwnd}")
 
-def activate_window2(hwnd):
+def activate_window(hwnd):
     win32gui.ShowWindow(hwnd, win32con.SW_SHOWMAXIMIZED)
     win32gui.SetForegroundWindow(hwnd)
-
-
-def activate_window(hwnd):
-    foreground = win32gui.GetForegroundWindow()
-
-    current_thread = win32api.GetCurrentThreadId()
-    foreground_thread, _ = win32process.GetWindowThreadProcessId(foreground)
-    target_thread, _ = win32process.GetWindowThreadProcessId(hwnd)
-
-    attached_to_foreground = False
-    attached_to_target = False
-
-    try:
-        if current_thread != foreground_thread:
-            win32process.AttachThreadInput(
-                current_thread,
-                foreground_thread,
-                True,
-            )
-            attached_to_foreground = True
-
-        if current_thread != target_thread:
-            win32process.AttachThreadInput(
-                current_thread,
-                target_thread,
-                True,
-            )
-            attached_to_target = True
-
-        if win32gui.IsIconic(hwnd):
-            win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-
-        win32gui.ShowWindow(hwnd, win32con.SW_SHOW)
-        win32gui.SetForegroundWindow(hwnd)
-        win32gui.SetActiveWindow(hwnd)
-        win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
-
-    finally:
-        if attached_to_target:
-            win32process.AttachThreadInput(
-                current_thread,
-                target_thread,
-                False,
-            )
-
-        if attached_to_foreground:
-            win32process.AttachThreadInput(
-                current_thread,
-                foreground_thread,
-                False,
-            )
 
 if __name__ == "__main__":
     run()

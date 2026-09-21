@@ -37,7 +37,9 @@ times you want.
 ## Usage
 
 To use the program, run however many instances you want (more than one), wait for them to be loaded (on
-the title screen) and run the program **as administrator**. You can also run the program while you are already loaded
+the title screen) and run the program **as administrator**. Using Atum, the program will automatically create worlds on the opened instances, 
+during the world generation process, I recommend you to not touch the keyboard or switch into different windows manually. 
+You can also run the program while you are already loaded
 in a world on any or all of the instances (meaning SSG is possible, this way you can also re-run the
 program if it breaks for some reason). The program will stop itself once
 you've finished the game on all the instances. You can also pause or terminate the program using a
@@ -82,6 +84,8 @@ program switches windows wrong, try increasing these values. These values have t
 numbers, and they are mean how long will the pause be in seconds.
 - `"DEBUG"` is used for debugging purposes, as of now, the only thing that changes when this value 
 is changed to `true`, the program will allow to run only one instance.
+- `"parallel_world_gen"` is a setting that will set how the worlds are generated, if set to `true`, the worlds will be 
+generated all at once, if set to `false`, the program will wait until each world is generated before generating the next one.
 
 ## Known issues
 

@@ -83,6 +83,17 @@ numbers, and they are mean how long will the pause be in seconds.
 - `"DEBUG"` is used for debugging purposes, as of now, the only thing that changes when this value 
 is changed to `true`, the program will allow to run only one instance.
 
+## Known issues
+
+Very rarely, when the window is being switched while the user is holding/clicking `ctrl`, the Windows search bar pops up. 
+The program tries to avoid this by programmatically releasing `ctrl` before switching the windows, but it can still happen,
+depending on user input. If this happens to you, I recommend releasing `ctrl` to let the program continue smoothly.
+
+Before the window is switched, the program periodically presses `esc` in order to get to the unpaused game state, so that 
+it can be paused by `pauseOnLostFocus` after it is no longer the foreground window. This is usually quick, but sometimes
+it can take longer/happen multiple times due to conflicting user input. If this happens, I recommend releasing all keys until
+the window is switched.
+
 ## Testing
 
 If you want to test the program, you are welcome to do so. If during your testing you happen to find any 

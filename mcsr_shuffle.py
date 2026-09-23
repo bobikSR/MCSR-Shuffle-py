@@ -159,8 +159,7 @@ def get_time_str_from_ms(milis: int) -> str:
 
 def get_final_times(instances: list[MinecraftInstance]) -> tuple[str, str]:
     final_rta_ms = max([inst.final_rta_ms if inst.final_rta_ms is not None else 0 for inst in instances])
-    final_igt_ms = sum([inst.final_rta_ms if inst.final_igt_ms is not None else 0 for inst in instances])
-    return get_time_str_from_ms(final_rta_ms), get_time_str_from_ms(final_igt_ms)
+    return get_time_str_from_ms(final_rta_ms)
 
 def run():
     # set up global vars
@@ -233,7 +232,8 @@ def run():
         if remaining_sleep_after_pause > 0.0:
             sleep_time = int(remaining_sleep_after_pause)
             remaining_sleep_after_pause = 0.0
-        LOGGER.info(f"Sleeping for {sleep_time} seconds...")
+        if config["DEBUG"]:
+            LOGGER.info(f"Sleeping for {sleep_time} seconds...")
         sleep_start_time = time.time()
         switch_timer = Timer(sleep_time, lambda: None) # this is used as cancellable sleep
         switch_timer.start()
@@ -261,9 +261,8 @@ def run():
     switch_timer.join()
 
     if all([inst.is_completed for inst in original_windows]):
-        final_rta, total_igt = get_final_times(original_windows)
-        LOGGER.info(f"Completed MCSR Shuffle with total IGT of {total_igt} and final RTA of {final_rta}")
-        print(f"Completed MCSR Shuffle with total IGT of {total_igt} and final RTA of {final_rta}")
+        final_rta = get_final_times(original_windows)
+        LOGGER.info(f"Completed MCSR Shuffle with final RTA of {final_rta}")
 
 def is_complete_checker(instances: list[MinecraftInstance], switch_timer: Timer):
     global paused, exit_scheduled

@@ -15,7 +15,6 @@ class MinecraftInstance:
     launcher: Launcher
     is_completed: bool
     just_completed: bool
-    final_igt_ms: int | None
     final_rta_ms: int | None
 
     def __init__(self, hwnd: int, pid: int, cmd_line: list[str]):
@@ -26,7 +25,6 @@ class MinecraftInstance:
         self.is_completed = False
         self.just_completed = False
         self.record_json = ""
-        self.final_igt_ms = None
         self.final_rta_ms = None
 
     def __str__(self):
@@ -53,7 +51,7 @@ class MinecraftInstance:
                         self.version = data.get("Version", None)
                         if not self.version:
                             self.version = "1.16.1"
-                except Exception:
+                except (KeyError, JSONDecodeError):
                     self.version = "1.16.1"
                     # got everything for color mc, can leave
                 self.launcher = Launcher.COLORMC
@@ -69,7 +67,7 @@ class MinecraftInstance:
                     return
                 self.version = "1.16.1"
                 return
-            except (ValueError, IndexError) as e:
+            except (ValueError, IndexError):
                 self.version = "1.16.1"
             return
 
@@ -137,7 +135,6 @@ class MinecraftInstance:
                     self.is_completed = data.get("is_completed", False)
                     if self.is_completed:
                         self.just_completed = True
-                        self.final_igt_ms = data.get("final_igt", None)
                         self.final_rta_ms = data.get("final_rta", None)
             except JSONDecodeError:
                 # this means the json file is empty (nothing happened in the world yet)

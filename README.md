@@ -82,7 +82,7 @@ settings for pauses in between key presses, if you're having troubles running th
 program switches windows wrong, try increasing these values. These values have to be integers or floating point
 numbers, and they are mean how long will the pause be in seconds.
 - `"DEBUG"` is used for debugging purposes, as of now, the only thing that changes when this value 
-is changed to `true`, the program will allow to run only one instance.
+is changed to `true`, the program will allow to run only one instance and more info will be logged.
 - `"parallel_world_gen"` is a setting that will set how the worlds are generated, if set to `true`, the worlds will be 
 generated all at once, if set to `false`, the program will wait until each world is generated before generating the next one.
 

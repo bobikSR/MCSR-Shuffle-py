@@ -10,7 +10,7 @@ import time
 import logging
 import datetime
 import keyboard
-from threading import Timer
+from threading import Event
 import psutil
 
 from minecraft_instance import MinecraftInstance
@@ -96,9 +96,10 @@ def set_up(instances: list[MinecraftInstance]):
     LOGGER.info("Set up done!")
     print("Set up done!")
 
-def ensure_correct_window(instance: MinecraftInstance, sleep_time: float):
+def ensure_correct_window(instance: MinecraftInstance):
+    global config
     while True:
-        time.sleep(sleep_time) # os can take a little bit for GetForegroundWindow() to return the real FG win hwnd
+        time.sleep(config["ensure_correct_instance_retry"]) # os can take a little bit for GetForegroundWindow() to return the real FG win hwnd
         if instance.hwnd == win32gui.GetForegroundWindow():
             break
         LOGGER.warning(f"Correcting foreground window to {instance.hwnd}...")
@@ -126,7 +127,7 @@ def check_config_dict() -> bool:
         return False
     return True
 
-def pause_shuffle(switch_timer: Timer):
+def pause_shuffle(switch_timer: Event):
     global paused, exit_scheduled, paused_time
     if exit_scheduled:
         return
@@ -135,15 +136,15 @@ def pause_shuffle(switch_timer: Timer):
     print(f"{'Unp' if not paused else 'P'}ausing...")
     if paused:
         paused_time = time.time()
-        switch_timer.cancel()
+        switch_timer.set()
 
-def exit_shuffle(switch_timer: Timer):
+def exit_shuffle(switch_timer: Event):
     global exit_scheduled, paused
     LOGGER.info("Exiting...")
     print("Exiting...")
     exit_scheduled = True
     paused = False
-    switch_timer.cancel()
+    switch_timer.set()
 
 def get_time_str_from_ms(milis: int) -> str:
     # example: milis = 61000, secs = 61, mins = 1
@@ -157,7 +158,7 @@ def get_time_str_from_ms(milis: int) -> str:
         return f"{hrs:02d}:{mins:02d}:{secs:02d}.{ms:03d}"
     return f"{mins:02d}:{secs:02d}.{ms:03d}"
 
-def get_final_times(instances: list[MinecraftInstance]) -> tuple[str, str]:
+def get_final_times(instances: list[MinecraftInstance]) -> str:
     final_rta_ms = max([inst.final_rta_ms if inst.final_rta_ms is not None else 0 for inst in instances])
     return get_time_str_from_ms(final_rta_ms)
 
@@ -188,16 +189,19 @@ def run():
     except Exception as e:
         LOGGER.error(str(e))
     LOGGER.info(f"Found {len(original_windows)} open Minecraft window{'s' if len(original_windows) != 1 else ''}.")
-    print(f"Found {len(original_windows)} open Minecraft window{'s' if len(original_windows) != 1 else ''}.")
+    if config["DEBUG"]:
+        print(f"Found {len(original_windows)} open Minecraft window{'s' if len(original_windows) != 1 else ''}.")
     if len(original_windows) == 0:
         LOGGER.error("Found 0 open Minecraft instances, closing program...")
-        print("Found 0 open Minecraft instances, closing program...")
+        if config["DEBUG"]:
+            print("Found 0 open Minecraft instances, closing program...")
         return
     if not config["DEBUG"]:
         # if only one instance is open, the shuffle makes no sense
         if len(original_windows) < 2:
             LOGGER.error("Found only one Minecraft instance, closing program...")
-            print("Found only one Minecraft instance, closing program...")
+            if config["DEBUG"]:
+                print("Found only one Minecraft instance, closing program...")
             return
 
     # set up by creating worlds using atum
@@ -208,10 +212,10 @@ def run():
     if current_window.is_in_state("inworld,paused"):
         on_before_switch(current_window)
 
-    switch_timer: Timer = Timer(0, lambda: None) # assign dummy value so IDE stops crying
+    switch_timer: Event = Event() # assign dummy value so IDE stops crying
 
     # start thread that will check if runs on open instances were completed
-    checker_thread = threading.Thread(target=is_complete_checker, args=(original_windows, switch_timer,))
+    checker_thread = threading.Thread(target=lambda: is_complete_checker(original_windows, switch_timer))
     checker_thread.start()
 
     # set up pause and exist hotkeys
@@ -235,9 +239,8 @@ def run():
         if config["DEBUG"]:
             LOGGER.info(f"Sleeping for {sleep_time} seconds...")
         sleep_start_time = time.time()
-        switch_timer = Timer(sleep_time, lambda: None) # this is used as cancellable sleep
-        switch_timer.start()
-        switch_timer.join()
+        switch_timer.clear() # this is used as cancellable sleep
+        switch_timer.wait(sleep_time)
         while paused: # yield thread if paused
             time.sleep(0)
         if paused_time > 0.0:
@@ -254,17 +257,18 @@ def run():
             break
         on_before_switch(current_window)
         current_window = random_win_to_foreground(possible_windows)
-        ensure_correct_window(current_window, config["ensure_correct_instance_retry"])
+        ensure_correct_window(current_window)
         unpause_after_switch()
 
     checker_thread.join()
-    switch_timer.join()
 
-    if all([inst.is_completed for inst in original_windows]):
+    if all(inst.is_completed for inst in original_windows):
         final_rta = get_final_times(original_windows)
         LOGGER.info(f"Completed MCSR Shuffle with final RTA of {final_rta}")
+        if config["DEBUG"]:
+            print(f"Completed MCSR Shuffle with final RTA of {final_rta}")
 
-def is_complete_checker(instances: list[MinecraftInstance], switch_timer: Timer):
+def is_complete_checker(instances: list[MinecraftInstance], switch_timer: Event):
     global paused, exit_scheduled
     completions: int = 0
     while True:
@@ -272,7 +276,7 @@ def is_complete_checker(instances: list[MinecraftInstance], switch_timer: Timer)
             time.sleep(0)
         if exit_scheduled:
             break
-        if all([inst.is_completed for inst in instances]):
+        if all(inst.is_completed for inst in instances):
             break
         for inst in instances:
             if not inst.record_json or inst.record_json == "":
@@ -283,13 +287,17 @@ def is_complete_checker(instances: list[MinecraftInstance], switch_timer: Timer)
             if inst.just_completed:
                 completions += 1
                 keyboard.press_and_release("esc")
-                switch_timer.cancel()
+                time.sleep(0.05)
+                switch_timer.set()
                 LOGGER.info(f"Completed run {completions} on instance with HWND {inst.hwnd}")
-                print(f"Completed run {completions} on instance with HWND {inst.hwnd}")
+                if config["DEBUG"]:
+                    print(f"Completed run {completions} on instance with HWND {inst.hwnd}")
 
 def activate_window(hwnd):
+    keyboard.press("alt") # idk why https://stackoverflow.com/questions/63648053/pywintypes-error-0-setforegroundwindow-no-error-message-is-available
     win32gui.ShowWindow(hwnd, win32con.SW_SHOWMAXIMIZED)
     win32gui.SetForegroundWindow(hwnd)
+    keyboard.release("alt")
 
 if __name__ == "__main__":
     run()

@@ -1,8 +1,8 @@
 {
   "lower_bound": 5,
   "upper_bound": 35,
-  "pause_hotkey": "p",
-  "exit_hotkey": "o",
+  "pause_hotkey": "ctrl+p",
+  "exit_hotkey": "ctrl+o",
   "parallel_world_gen": true,
   "ensure_correct_instance_retry": 0.05,
   "before_switch_esc_press_pause": 0.075,

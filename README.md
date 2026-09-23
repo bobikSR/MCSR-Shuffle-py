@@ -86,6 +86,14 @@ is changed to `true`, the program will allow to run only one instance and more i
 - `"parallel_world_gen"` is a setting that will set how the worlds are generated, if set to `true`, the worlds will be 
 generated all at once, if set to `false`, the program will wait until each world is generated before generating the next one.
 
+### Pausing
+
+Pausing was added so that you would be able to do other stuff on your PC while also running the program. Examples could be
+changing a song, stopping a video, banning a chatter. I recommend you to pause the program via your set hotkey if you want to
+do something like that. Not doing that might result in unwanted/unexpected behavior. Before you unpause, the instances 
+would be in the same state as they were before the pause, meaning the active one should be the same, game state should 
+be the same on all instances (for example I advise to not have your inventory open if it wasn't that way beforehand).  
+
 ## Known issues
 
 Very rarely, when the window is being switched while the user is holding/clicking `ctrl`, the Windows search bar pops up. 

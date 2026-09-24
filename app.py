@@ -14,10 +14,12 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
         tabs = QTabWidget()
 
-
-        tabs.addTab(GeneralTab(), "general")
-        tabs.addTab(SettingsTab(), "settings")
-        tabs.addTab(AboutTab(), "about")
+        self.settings_tab = SettingsTab()
+        self.general_tab = GeneralTab(self.settings_tab)
+        self.about_tab = AboutTab()
+        tabs.addTab(self.general_tab, "general")
+        tabs.addTab(self.settings_tab, "settings")
+        tabs.addTab(self.about_tab, "about")
         layout.addWidget(tabs)
         container = QWidget()
         container.setLayout(layout)

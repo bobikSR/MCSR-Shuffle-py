@@ -5,6 +5,7 @@ from PyQt6.QtCore import QLocale
 from PyQt6.QtGui import QIntValidator, QDoubleValidator
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLineEdit, QCheckBox, QHBoxLayout, QPushButton
 import os
+from mcsr_shuffle_py.config_class import Config
 
 
 class SettingsTab(QWidget):
@@ -94,7 +95,7 @@ class SettingsTab(QWidget):
                 self.before_switch_esc_press_pause.setText(str(loaded_config["before_switch_esc_press_pause"]))
                 self.set_up_key_press_pause.setText(str(loaded_config["set_up_key_press_pause"]))
         except (FileNotFoundError, KeyError, JSONDecodeError):
-            print("Unable to load settings!")
+            self.load_default_values()
         return
 
     def save_to_json(self):
@@ -118,7 +119,30 @@ class SettingsTab(QWidget):
             with open(config_path, "w") as file:
                 file.write(json_str)
         except (FileNotFoundError, Exception):
-            print("Unable to save settings!")
-        print("Saving!!!")
+            pass
         return
+
+    def load_default_values(self):
+        self.lower_bound.setText("5")
+        self.upper_bound.setText("35")
+        self.pause_hotkey.setText("ctrl+p")
+        self.exit_hotkey.setText("ctrl+o")
+        self.parallel_world_gen.setChecked(False)
+        self.ensure_correct_instance_retry.setText("0.05")
+        self.before_switch_esc_press_pause.setText("0.075")
+        self.set_up_key_press_pause.setText("0.05")
+        self.debug.setChecked(True)
+
+    def get_config_from_values(self) -> Config:
+        return Config(
+            int(self.lower_bound.text().strip()),
+            int(self.upper_bound.text().strip()),
+            self.pause_hotkey.text().strip(),
+            self.exit_hotkey.text().strip(),
+            self.parallel_world_gen.isChecked(),
+            float(self.ensure_correct_instance_retry.text().strip()),
+            float(self.before_switch_esc_press_pause.text().strip()),
+            float(self.set_up_key_press_pause.text().strip()),
+            self.debug.isChecked()
+        )
 

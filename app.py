@@ -3,23 +3,20 @@ from PyQt6.QtWidgets import QMainWindow, QWidget, QApplication, QPushButton, QVB
 from PyQt6.QtCore import QSize, Qt
 from gui.general_tab import GeneralTab
 from gui.settings_tab import SettingsTab
-from gui.about_tab import AboutTab
 
 
 class MainWindow(QMainWindow):
     def __init__(self,):
         super().__init__()
         self.setWindowTitle("MCSR Shuffle")
-        self.setFixedSize(QSize(400,450))
+        self.setFixedSize(QSize(400,400))
         layout = QVBoxLayout()
         tabs = QTabWidget()
 
         self.settings_tab = SettingsTab()
         self.general_tab = GeneralTab(self.settings_tab)
-        self.about_tab = AboutTab()
         tabs.addTab(self.general_tab, "general")
         tabs.addTab(self.settings_tab, "settings")
-        tabs.addTab(self.about_tab, "about")
         layout.addWidget(tabs)
         container = QWidget()
         container.setLayout(layout)

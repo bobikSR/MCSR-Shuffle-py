@@ -11,7 +11,7 @@ import psutil
 import win32con
 import win32gui
 import win32process
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal, QThread
 
 from minecraft_instance import MinecraftInstance
 from config_class import Config
@@ -44,7 +44,9 @@ class MCSRShuffle(QObject):
     detect_error_signal = pyqtSignal()
     finished_error_signal = pyqtSignal()
 
-    def __init__(self):
+    main_thread_ref: QThread | None
+
+    def __init__(self, main_thread_ref: QThread | None):
         super().__init__()
         self.minecraft_instances = []
         self.paused = False
@@ -52,6 +54,7 @@ class MCSRShuffle(QObject):
         self.exit_scheduled = False
         self.switch_timer = Event()
         self.completions = 0
+        self.main_thread_ref = main_thread_ref
         return
 
     def get_minecraft_instances(self) -> str:
@@ -233,6 +236,8 @@ class MCSRShuffle(QObject):
         self.minecraft_instances = []
         
     def complete(self):
+        if self.main_thread_ref is not None:
+            self.moveToThread(self.main_thread_ref)
         self.finished_signal.emit()
 
     def complete_with_error(self):
@@ -324,11 +329,12 @@ class MCSRShuffle(QObject):
             self.complete_with_error()
 
         checker_thread.join()
-        if all(inst.is_completed for inst in self.minecraft_instances):
+        if len(self.minecraft_instances) > 0 and all(inst.is_completed for inst in self.minecraft_instances):
             final_rta = self.get_final_times()
             LOGGER.info(f"Completed MCSR Shuffle with final RTA of {final_rta}")
             if self.config.DEBUG:
                 print(f"Completed MCSR Shuffle with final RTA of {final_rta}")
+
 
         self.complete()
 

@@ -7,7 +7,7 @@ from PyQt6.QtGui import QIntValidator, QDoubleValidator
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLineEdit, QCheckBox, QHBoxLayout, QPushButton, QLabel, \
     QGraphicsOpacityEffect
 import os
-from mcsr_shuffle_py.config_class import Config
+from config_class import Config
 
 
 

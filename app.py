@@ -1,8 +1,7 @@
-from PyQt6 import QtCore, QtWidgets
-from PyQt6.QtWidgets import QMainWindow, QWidget, QApplication, QPushButton, QVBoxLayout, QTabWidget
-from PyQt6.QtCore import QSize, Qt
-from gui.general_tab import GeneralTab
-from gui.settings_tab import SettingsTab
+from PyQt6.QtWidgets import QMainWindow, QWidget, QApplication, QVBoxLayout, QTabWidget
+from PyQt6.QtCore import QSize
+from general_tab import GeneralTab
+from settings_tab import SettingsTab
 
 
 class MainWindow(QMainWindow):

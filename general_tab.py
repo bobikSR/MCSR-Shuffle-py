@@ -1,9 +1,9 @@
+from PyQt6 import QtCore
 from PyQt6.QtCore import Qt, QThread
-from PyQt6.QtGui import QIntValidator
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLineEdit, QPushButton, QLabel
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel
 
-from mcsr_shuffle_py.gui.settings_tab import SettingsTab
-from mcsr_shuffle_py.shuffle_class import MCSRShuffle
+from settings_tab import SettingsTab
+from shuffle_class import MCSRShuffle
 
 
 class GeneralTab(QWidget):
@@ -13,7 +13,7 @@ class GeneralTab(QWidget):
         btn_width = 150
         alignment = Qt.AlignmentFlag.AlignHCenter
 
-        self.shuffler = MCSRShuffle()
+        self.shuffler = MCSRShuffle(QtCore.QThread.currentThread())
         #self.shuffler.config = settings_tab.get_config_from_values()
         self.settings_ref = settings_tab
 
@@ -61,7 +61,7 @@ class GeneralTab(QWidget):
         self.stop_btn.clicked.connect(self.on_stop_click)
         layout.addWidget(self.stop_btn, alignment=alignment)
 
-        self.thread = QThread()
+        self.thread = None
         self.setLayout(layout)
 
     def on_detect_click(self):
@@ -69,6 +69,10 @@ class GeneralTab(QWidget):
             self.on_bad_settings()
             return
         self.shuffler.config = self.settings_ref.get_config_from_values()
+        self.shuffler.reset_values()
+        if self.thread is not None:
+            self.thread.quit()
+            self.thread.deleteLater()
         detect_str = self.shuffler.get_minecraft_instances()
         if detect_str == "":
             self.found_label.setStyleSheet("color: red;")
@@ -81,7 +85,6 @@ class GeneralTab(QWidget):
         self.progress_label.setText(" ")
 
     def on_start_click(self):
-
         self.thread = QThread()
         self.shuffler.moveToThread(self.thread)
         self.thread.started.connect(self.shuffler.run)
@@ -89,10 +92,10 @@ class GeneralTab(QWidget):
         self.shuffler.finished_signal.connect(self.shuffle_finished)
         self.shuffler.finished_signal.connect(self.thread.quit)
         self.thread.finished.connect(self.thread.deleteLater)
+        self.thread.destroyed.connect(self.thread_destroyed)
 
         self.shuffler.finished_error_signal.connect(self.shuffle_finished_with_error)
         self.shuffler.finished_error_signal.connect(self.thread.quit)
-        self.thread.finished.connect(self.thread.deleteLater)
 
         self.shuffler.pause_signal.connect(self.pause_signal)
         self.shuffler.completion_signal.connect(self.completion_signal)
@@ -105,9 +108,10 @@ class GeneralTab(QWidget):
 
         self.pause_btn.setDisabled(False)
         self.stop_btn.setDisabled(False)
+        self.detect_btn.setDisabled(True)
 
     def shuffle_finished(self):
-        if all(inst.is_completed for inst in self.shuffler.minecraft_instances):
+        if len(self.shuffler.minecraft_instances) > 0 and all(inst.is_completed for inst in self.shuffler.minecraft_instances):
             self.state_label.setText("State: Finished!")
             self.time_label.setText(f"Final time: {self.shuffler.get_final_times()}")
         else:
@@ -118,6 +122,7 @@ class GeneralTab(QWidget):
         self.pause_btn.setDisabled(True)
         self.stop_btn.setDisabled(True)
         self.shuffler.reset_values()
+        self.detect_btn.setDisabled(False)
 
     def shuffle_finished_with_error(self):
         self.found_label.setText(" ")
@@ -126,6 +131,7 @@ class GeneralTab(QWidget):
         self.start_btn.setDisabled(True)
         self.pause_btn.setDisabled(True)
         self.stop_btn.setDisabled(True)
+        self.detect_btn.setDisabled(False)
 
     def pause_signal(self):
         self.state_label.setText(f"State: {'Paused' if self.shuffler.paused else 'Running'}")
@@ -151,17 +157,19 @@ class GeneralTab(QWidget):
             self.found_label.setStyleSheet("color: black;")
             self.found_label.setText(" ")
             return # everything fine
+        self.on_bad_settings()
         self.found_label.setStyleSheet("color: black;")
         self.found_label.setText("A settings change has been made since last detection, please detect again!")
-        self.start_btn.setDisabled(True)
-        self.state_label.setText(" ")
-        self.progress_label.setText(" ")
-        self.shuffler.reset_values()
 
     def on_bad_settings(self):
         self.found_label.setStyleSheet("color: red;")
         self.found_label.setText("ERROR: Please fix your settings before playing!")
         self.start_btn.setDisabled(True)
+        self.pause_btn.setDisabled(True)
+        self.stop_btn.setDisabled(True)
         self.state_label.setText(" ")
         self.progress_label.setText(" ")
         self.shuffler.reset_values()
+
+    def thread_destroyed(self):
+        self.thread = None

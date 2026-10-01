@@ -14,7 +14,7 @@ class GeneralTab(QWidget):
         alignment = Qt.AlignmentFlag.AlignHCenter
 
         self.shuffler = MCSRShuffle()
-        self.shuffler.config = settings_tab.get_config_from_values()
+        #self.shuffler.config = settings_tab.get_config_from_values()
         self.settings_ref = settings_tab
 
         layout.setContentsMargins(20, 15, 20, 20)
@@ -26,7 +26,9 @@ class GeneralTab(QWidget):
         layout.addWidget(self.detect_btn, alignment=alignment)
 
         self.found_label = QLabel(" ")
-        layout.addWidget(self.found_label, alignment=alignment)
+        self.found_label.setWordWrap(True)
+        self.found_label.setAlignment(alignment)
+        layout.addWidget(self.found_label)
 
         layout.addStretch(2)
 
@@ -60,18 +62,26 @@ class GeneralTab(QWidget):
         self.setLayout(layout)
 
     def on_detect_click(self):
+        if self.settings_ref.validate_form() != "":
+            self.found_label.setStyleSheet("color: red;")
+            self.found_label.setText("ERROR: Please fix your settings before playing!")
+            self.start_btn.setDisabled(True)
+            self.state_label.setText(" ")
+            self.progress_label.setText(" ")
+            return
         self.shuffler.config = self.settings_ref.get_config_from_values()
         detect_str = self.shuffler.get_minecraft_instances()
         if detect_str == "":
-            self.found_label.setText("An error occurred while detecting instances, see the latest log for more.")
+            self.found_label.setStyleSheet("color: red;")
+            self.found_label.setText("ERROR: An error occurred while detecting instances, see the latest log for more.")
         else:
+            self.found_label.setStyleSheet("color: black;")
             self.found_label.setText(detect_str)
         self.start_btn.setDisabled(not self.shuffler.can_play())
         self.state_label.setText(" ")
         self.progress_label.setText(" ")
 
     def on_start_click(self):
-        self.shuffler.config = self.settings_ref.get_config_from_values()
 
         self.thread = QThread()
         self.shuffler.moveToThread(self.thread)

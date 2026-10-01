@@ -1,7 +1,6 @@
 TODO:
 Add synchronization
 make a set up video tutorial
-in general, disable detect if form is invalid
 add testing if configs are same when changed from settings to general
 add showing final time after completion
 

@@ -1,16 +1,22 @@
 import json
 from json import JSONDecodeError
 
+from PyQt6 import QtCore
 from PyQt6.QtCore import QLocale, Qt
 from PyQt6.QtGui import QIntValidator, QDoubleValidator
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLineEdit, QCheckBox, QHBoxLayout, QPushButton, QLabel
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLineEdit, QCheckBox, QHBoxLayout, QPushButton, QLabel, \
+    QGraphicsOpacityEffect
 import os
 from mcsr_shuffle_py.config_class import Config
+
+
 
 
 class SettingsTab(QWidget):
     def __init__(self):
         super().__init__()
+        self.animation = None
+        self.effect = None
         layout = QVBoxLayout()
         form = QFormLayout()
         layout.addLayout(form)
@@ -71,7 +77,8 @@ class SettingsTab(QWidget):
         self.err_label = QLabel(" ")
         self.err_label.setWordWrap(True)
         self.err_label.setStyleSheet("color: red;")
-        err_and_btn_layout.addWidget(self.err_label, alignment=Qt.AlignmentFlag.AlignHCenter)
+        self.err_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        err_and_btn_layout.addWidget(self.err_label)
 
         # save button
         button_layout = QHBoxLayout()
@@ -102,12 +109,18 @@ class SettingsTab(QWidget):
                 self.before_switch_esc_press_pause.setText(str(loaded_config["before_switch_esc_press_pause"]))
                 self.set_up_key_press_pause.setText(str(loaded_config["set_up_key_press_pause"]))
         except (FileNotFoundError, KeyError, JSONDecodeError):
+            self.err_label.setStyleSheet("color: black;")
+            self.unfade_imm(self.err_label)
+            self.err_label.setText("WARN: Couldn't load values from config.json!")
+            self.fade(self.err_label)
             self.load_default_values()
         return
 
     def save_to_json(self):
         validation_msg = self.validate_form()
         if validation_msg != "":
+            self.err_label.setStyleSheet("color: red;")
+            self.unfade_imm(self.err_label)
             self.err_label.setText(validation_msg)
             return
         else:
@@ -132,7 +145,11 @@ class SettingsTab(QWidget):
             with open(config_path, "w") as file:
                 file.write(json_str)
         except (FileNotFoundError, Exception):
-            pass
+            self.err_label.setText("ERROR: An error occurred while saving to config.json!")
+            return
+        self.err_label.setStyleSheet("color: black;")
+        self.err_label.setText("Saved!")
+        self.fade(self.err_label)
         return
 
     def load_default_values(self):
@@ -173,3 +190,23 @@ class SettingsTab(QWidget):
         if len(invalid_fields) > 0:
             validation_msg = f"ERROR: Make sure you fill out these fields: {", ".join([f for f in invalid_fields])}"
         return validation_msg
+
+    def fade(self, widget):
+        self.effect = QGraphicsOpacityEffect()
+        widget.setGraphicsEffect(self.effect)
+
+        self.animation = QtCore.QPropertyAnimation(self.effect, b"opacity")
+        self.animation.setDuration(1000)
+        self.animation.setStartValue(1)
+        self.animation.setEndValue(0)
+        self.animation.start()
+
+    def unfade_imm(self, widget):
+        self.effect = QGraphicsOpacityEffect()
+        widget.setGraphicsEffect(self.effect)
+
+        self.animation = QtCore.QPropertyAnimation(self.effect, b"opacity")
+        self.animation.setDuration(1)
+        self.animation.setStartValue(0)
+        self.animation.setEndValue(1)
+        self.animation.start()

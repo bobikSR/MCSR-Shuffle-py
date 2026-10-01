@@ -1,1 +1,1 @@
-pyinstaller --uac-admin --noconsole mcsr_shuffle.py
+pyinstaller --uac-admin --noconsole -n "MCSRShuffle.exe"  app.py

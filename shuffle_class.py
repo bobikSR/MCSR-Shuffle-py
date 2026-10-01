@@ -198,6 +198,8 @@ class MCSRShuffle(QObject):
                 if not self.config.parallel_world_gen:  # if parallel is false, wait for each world to be generated before generating the next one
                     while not inst.is_in_state("inworld"):
                         time.sleep(0)
+            time.sleep(self.config.set_up_key_press_pause)
+            time.sleep(self.config.set_up_key_press_pause)
         # then end this with waiting for every world to stop generating
         if self.config.parallel_world_gen:
             while not all([inst.is_in_state("inworld") for inst in self.minecraft_instances]):

@@ -51,6 +51,9 @@ When you start the shuffle, the program will switch between all opened instances
 new world will be created. The worlds will be created serially or in parallel, depending on your settings. During this stage
 (the setup), I recommend **not touching your keyboard nor mouse.**
 
+If something unexpected happens where the only solution is to restart do so like this. First exit through the hotkey or 
+the button, then re-detect instances, then start the shuffle again.
+
 ### GUI and configuration
 
 The GUI for this program is fairly simple, being comprised of only two tabs - `general` and `settings`. The buttons in the 

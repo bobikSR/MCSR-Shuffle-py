@@ -90,7 +90,8 @@ class MCSRShuffle(QObject):
 
     def exit_shuffle(self):
         LOGGER.info("Exiting...")
-        print("Exiting...")
+        if self.config.DEBUG:
+            print("Exiting...")
         self.exit_scheduled = True
         self.paused = False
         self.switch_timer.set()
@@ -98,12 +99,17 @@ class MCSRShuffle(QObject):
     def pause_shuffle(self):
         if self.exit_scheduled:
             return
-        self.paused = not self.paused
-        LOGGER.info(f"{'Unp' if not self.paused else 'P'}ausing...")
-        print(f"{'Unp' if not self.paused else 'P'}ausing...")
-        if self.paused:
+        next_paused: bool = not self.paused
+        LOGGER.info(f"{'Unp' if not next_paused else 'P'}ausing...")
+        if self.config.DEBUG:
+            print(f"{'Unp' if not next_paused else 'P'}ausing...")
+        if next_paused:
             self.paused_time = time.time()
             self.switch_timer.set()
+        else:
+            self.activate_window(self.current_instance.hwnd)
+            self.on_before_switch()
+        self.paused = next_paused
         self.pause_signal.emit()
 
     @staticmethod
@@ -208,7 +214,7 @@ class MCSRShuffle(QObject):
 
     def is_complete_checker(self):
         while True:
-            while self.paused:
+            while self.paused and not self.exit_scheduled:
                 time.sleep(0)
             if self.exit_scheduled:
                 break
@@ -290,7 +296,7 @@ class MCSRShuffle(QObject):
         remaining_sleep_after_pause: float = 0.0
         try:
             while True:
-                while self.paused:  # yield thread if paused
+                while self.paused and not self.exit_scheduled:  # yield thread if paused
                     time.sleep(0)
                 if self.exit_scheduled:
                     break
@@ -304,16 +310,16 @@ class MCSRShuffle(QObject):
                 sleep_start_time = time.time()
                 self.switch_timer.clear()  # this is used as cancellable sleep
                 self.switch_timer.wait(sleep_time)
-                while self.paused:  # yield thread if paused
+                while self.paused and not self.exit_scheduled:  # yield thread if paused
                     time.sleep(0)
+                if self.exit_scheduled:
+                    break
                 if self.paused_time > 0.0:
                     time_slept = self.paused_time - sleep_start_time
                     remaining_sleep_after_pause = sleep_time - time_slept
                     self.paused_time = 0.0
                     if remaining_sleep_after_pause > 0.0:
                         continue
-                if self.exit_scheduled:
-                    break
                 # choose a window from possible ones and switch to it
                 possible_windows = [inst for inst in self.minecraft_instances if
                                     inst.hwnd != self.current_instance.hwnd and not inst.is_completed]

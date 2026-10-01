@@ -1,8 +1,6 @@
 TODO:
 Add synchronization
-make a set up video tutorial
-add testing if configs are same when changed from settings to general
-add showing final time after completion
+
 
 TO TEST:
 Running the program with different versions open (e.g. 2x 1.16.1 and a 1.7.10 instance)

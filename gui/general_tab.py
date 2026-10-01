@@ -32,7 +32,7 @@ class GeneralTab(QWidget):
 
         layout.addStretch(2)
 
-        self.start_btn = QPushButton("Start")
+        self.start_btn = QPushButton("Start shuffle")
         self.start_btn.setFixedWidth(btn_width)
         self.start_btn.setDisabled(True)
         self.start_btn.clicked.connect(self.on_start_click)
@@ -43,6 +43,9 @@ class GeneralTab(QWidget):
 
         self.progress_label = QLabel(" ")
         layout.addWidget(self.progress_label, alignment=alignment)
+
+        self.time_label = QLabel(" ")
+        layout.addWidget(self.time_label, alignment=alignment)
 
         layout.addStretch(3)
 
@@ -106,6 +109,7 @@ class GeneralTab(QWidget):
     def shuffle_finished(self):
         if all(inst.is_completed for inst in self.shuffler.minecraft_instances):
             self.state_label.setText("State: Finished!")
+            self.time_label.setText(f"Final time: {self.shuffler.get_final_times()}")
         else:
             self.state_label.setText(" ")
             self.progress_label.setText(" ")

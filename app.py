@@ -9,7 +9,7 @@ class MainWindow(QMainWindow):
     def __init__(self,):
         super().__init__()
         self.setWindowTitle("MCSR Shuffle")
-        self.setFixedSize(QSize(400,400))
+        self.setFixedSize(QSize(400,450))
         layout = QVBoxLayout()
         tabs = QTabWidget()
 

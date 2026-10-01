@@ -1,9 +1,9 @@
 import json
 from json import JSONDecodeError
 
-from PyQt6.QtCore import QLocale
+from PyQt6.QtCore import QLocale, Qt
 from PyQt6.QtGui import QIntValidator, QDoubleValidator
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLineEdit, QCheckBox, QHBoxLayout, QPushButton
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QFormLayout, QLineEdit, QCheckBox, QHBoxLayout, QPushButton, QLabel
 import os
 from mcsr_shuffle_py.config_class import Config
 
@@ -67,13 +67,20 @@ class SettingsTab(QWidget):
         self.load_from_json()
         form.addRow(" ", None)
 
+        err_and_btn_layout = QVBoxLayout()
+        self.err_label = QLabel(" ")
+        self.err_label.setWordWrap(True)
+        self.err_label.setStyleSheet("color: red;")
+        err_and_btn_layout.addWidget(self.err_label, alignment=Qt.AlignmentFlag.AlignHCenter)
+
         # save button
         button_layout = QHBoxLayout()
         self.save_button = QPushButton("Save")
         self.save_button.clicked.connect(self.save_to_json)
         self.save_button.setFixedWidth(100)
         button_layout.addWidget(self.save_button)
-        layout.addLayout(button_layout)
+        err_and_btn_layout.addLayout(button_layout)
+        layout.addLayout(err_and_btn_layout)
 
         self.setLayout(layout)
 
@@ -99,6 +106,12 @@ class SettingsTab(QWidget):
         return
 
     def save_to_json(self):
+        validation_msg = self.validate_form()
+        if validation_msg != "":
+            self.err_label.setText(validation_msg)
+            return
+        else:
+            self.err_label.setText(" ")
         if os.path.isfile("config.json"):
             config_path = "config.json"
         else:
@@ -146,3 +159,17 @@ class SettingsTab(QWidget):
             self.debug.isChecked()
         )
 
+    # since some fields already have validators, here I only validate not None, not going to validate hotkeys - user error
+    # also no need to validate boolean fields
+    def validate_form(self):
+        validation_fields = ["lower_bound", "upper_bound", "pause_hotkey", "exit_hotkey",
+                             "ensure_correct_instance_retry", "before_switch_esc_press_pause", "set_up_key_press_pause"]
+        validation_msg = ""
+        invalid_fields = []
+        for f in validation_fields:
+            val = getattr(self, f).text()
+            if val is None or val.strip() == "":
+                invalid_fields.append(f)
+        if len(invalid_fields) > 0:
+            validation_msg = f"ERROR: Make sure you fill out these fields: {", ".join([f for f in invalid_fields])}"
+        return validation_msg

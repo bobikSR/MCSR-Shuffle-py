@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
             return
         if idx == 1: # changed to settings tab, nothing to check
             return
-        self.general_tab.found_label.setText("LOL!")
+        self.general_tab.on_changed_to_general()
 
 
 if __name__ == "__main__":

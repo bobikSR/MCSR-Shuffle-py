@@ -63,11 +63,7 @@ class GeneralTab(QWidget):
 
     def on_detect_click(self):
         if self.settings_ref.validate_form() != "":
-            self.found_label.setStyleSheet("color: red;")
-            self.found_label.setText("ERROR: Please fix your settings before playing!")
-            self.start_btn.setDisabled(True)
-            self.state_label.setText(" ")
-            self.progress_label.setText(" ")
+            self.on_bad_settings()
             return
         self.shuffler.config = self.settings_ref.get_config_from_values()
         detect_str = self.shuffler.get_minecraft_instances()
@@ -138,3 +134,30 @@ class GeneralTab(QWidget):
 
     def on_stop_click(self):
         self.shuffler.exit_shuffle()
+
+    def on_changed_to_general(self):
+        # here i want to fetch settings and check that they are the same as the ones i have
+        if not hasattr(self.shuffler, "config") or not self.shuffler.can_play(): # config has not been set yet or no detection yet
+            return
+        if self.settings_ref.validate_form() != "": # this will not happen
+            self.on_bad_settings()
+            return
+        tmp = self.settings_ref.get_config_from_values()
+        if self.shuffler.config == tmp:
+            self.found_label.setStyleSheet("color: black;")
+            self.found_label.setText(" ")
+            return # everything fine
+        self.found_label.setStyleSheet("color: black;")
+        self.found_label.setText("A settings change has been made since last detection, please detect again!")
+        self.start_btn.setDisabled(True)
+        self.state_label.setText(" ")
+        self.progress_label.setText(" ")
+        self.shuffler.reset_values()
+
+    def on_bad_settings(self):
+        self.found_label.setStyleSheet("color: red;")
+        self.found_label.setText("ERROR: Please fix your settings before playing!")
+        self.start_btn.setDisabled(True)
+        self.state_label.setText(" ")
+        self.progress_label.setText(" ")
+        self.shuffler.reset_values()

@@ -90,7 +90,7 @@ is because ToolScreen only works on the first instance (as of 16. Sept 2026) you
 (this is true at least for MultiMC). There are two ways of resolving this. The first and simpler one is to launch the instances
 in quick succession. My assumption is if the other instances are launching while the first instance is also still launching,
 ToolScreen will be injected properly into all of them. If that is not possible, or it doesn't work for some reason, you have to
-navigate to `C:/Users/<your_username>/.config/toolscreen/dlls` and between launching each instance,  
+navigate to `C:/Users/<your_username>/.config/toolscreen/dlls` and between launching each instance, 
 rename the `liblogger_x64.dll` and `Toolscreen.dll` files in that folder. Also, if you happen to use tab, escape, shift or enter as your ToolScreen hotkeys
 , you might have to change the required game states for these hotkeys in ToolScreen settings. To help you understand what to set the
 required game states to:

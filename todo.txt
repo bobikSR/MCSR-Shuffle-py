@@ -1,5 +1,6 @@
 TODO:
 Add synchronization
+fix issue with pausing if book button is focused
 
 
 TO TEST:

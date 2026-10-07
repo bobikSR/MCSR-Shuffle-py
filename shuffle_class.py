@@ -15,6 +15,7 @@ from PyQt6.QtCore import QObject, pyqtSignal, QThread
 
 from minecraft_instance import MinecraftInstance
 from config_class import Config
+import utils
 
 def get_log_name() -> str:
     return f"{datetime.datetime.now().strftime('%d-%m-%Y-%H-%M-%S')}"
@@ -88,6 +89,10 @@ class MCSRShuffle(QObject):
     def can_play(self) -> bool:
         return len(self.minecraft_instances) > 1
 
+    def is_on_current_instance(self) -> bool:
+        time.sleep(self.config.ensure_correct_instance_retry)
+        return self.current_instance.hwnd == win32gui.GetForegroundWindow()
+
     def exit_shuffle(self):
         LOGGER.info("Exiting...")
         if self.config.DEBUG:
@@ -107,7 +112,7 @@ class MCSRShuffle(QObject):
             self.paused_time = time.time()
             self.switch_timer.set()
         else:
-            self.activate_window(self.current_instance.hwnd)
+            utils.activate_window(self.current_instance.hwnd)
             self.on_before_switch()
         self.paused = next_paused
         self.pause_signal.emit()
@@ -119,33 +124,12 @@ class MCSRShuffle(QObject):
     def random_win_to_foreground(self, instances: list[MinecraftInstance]) -> MinecraftInstance:
         chosen_instance = self.get_random_instance(instances)
         LOGGER.info(f"Setting window with HWND {chosen_instance.hwnd} to foreground...")
-        self.activate_window(chosen_instance.hwnd)
+        utils.activate_window(chosen_instance.hwnd)
         return chosen_instance
-
-    @staticmethod
-    def activate_window(hwnd):
-        keyboard.press(
-            "alt")  # idk why https://stackoverflow.com/questions/63648053/pywintypes-error-0-setforegroundwindow-no-error-message-is-available
-        win32gui.ShowWindow(hwnd, win32con.SW_SHOWMAXIMIZED)
-        win32gui.SetForegroundWindow(hwnd)
-        keyboard.release("alt")
-
-    @staticmethod
-    def get_time_str_from_ms(milis: int) -> str:
-        # example: milis = 61000, secs = 61, mins = 1
-        secs = milis // 1000
-        ms = milis % 1000
-        mins = secs // 60
-        secs = secs % 60
-        hrs = mins // 60
-        mins = mins % 60
-        if hrs > 0:
-            return f"{hrs:02d}:{mins:02d}:{secs:02d}.{ms:03d}"
-        return f"{mins:02d}:{secs:02d}.{ms:03d}"
 
     def get_final_times(self) -> str:
         final_rta_ms = max([inst.final_rta_ms if inst.final_rta_ms is not None else 0 for inst in self.minecraft_instances])
-        return self.get_time_str_from_ms(final_rta_ms)
+        return utils.get_time_str_from_ms(final_rta_ms)
 
     def check_config(self) -> bool:
         if self.config.lower_bound <= 0.0:
@@ -173,7 +157,7 @@ class MCSRShuffle(QObject):
             # pause on lost focus will take care of this
             if self.current_instance.is_in_state("inworld,unpaused"):
                 break
-            keyboard.release("ctrl")  # to avoid pressing ctrl+esc, which brings up win search bar
+            utils.release_if_pressed("ctrl")  # to avoid pressing ctrl+esc, which brings up win search bar
             keyboard.press_and_release("esc")
             time.sleep(self.config.before_switch_esc_press_pause)
         return
@@ -181,21 +165,21 @@ class MCSRShuffle(QObject):
     @staticmethod
     def unpause_after_switch():
         # happy path is that before this runs MC will be on the basic pause screen
-        keyboard.release("shift")  # prevention of shift+tab
+        utils.release_if_pressed("shift")  # prevention of shift+tab
         keyboard.press_and_release("tab, enter")
 
     def ensure_correct_window(self):
         while True:
-            time.sleep(self.config.ensure_correct_instance_retry)  # os can take a little bit for GetForegroundWindow() to return the real FG win hwnd
-            if self.current_instance.hwnd == win32gui.GetForegroundWindow():
+            # os can take a little bit for GetForegroundWindow() to return the real FG win hwnd
+            if self.is_on_current_instance():
                 break
             LOGGER.warning(f"Correcting foreground window to {self.current_instance.hwnd}...")
-            self.activate_window(self.current_instance.hwnd)
+            utils.activate_window(self.current_instance.hwnd)
 
     def set_up(self):
         # first create worlds using atum
         for inst in self.minecraft_instances:
-            self.activate_window(inst.hwnd)
+            utils.activate_window(inst.hwnd)
             if inst.is_in_state("title"):
                 time.sleep(self.config.set_up_key_press_pause)
                 keyboard.press_and_release("shift+tab")
@@ -234,7 +218,8 @@ class MCSRShuffle(QObject):
                     LOGGER.info(f"Completed run {self.completions} on instance with HWND {inst.hwnd}")
                     if self.config.DEBUG:
                         print(f"Completed run {self.completions} on instance with HWND {inst.hwnd}")
-                    self.completion_signal.emit()
+                    if self.is_on_current_instance():
+                        self.completion_signal.emit()
 
     def reset_values(self):
         self.completions = 0
@@ -277,6 +262,7 @@ class MCSRShuffle(QObject):
         except Exception as e:
             LOGGER.error(str(e))
             self.complete_with_error()
+            return
 
         # set up ends on the last instance
         self.current_instance: MinecraftInstance = self.minecraft_instances[-1]
@@ -335,6 +321,7 @@ class MCSRShuffle(QObject):
             self.exit_scheduled = True
             checker_thread.join()
             self.complete_with_error()
+            return
 
         checker_thread.join()
         if len(self.minecraft_instances) > 0 and all(inst.is_completed for inst in self.minecraft_instances):
@@ -342,7 +329,6 @@ class MCSRShuffle(QObject):
             LOGGER.info(f"Completed MCSR Shuffle with final RTA of {final_rta}")
             if self.config.DEBUG:
                 print(f"Completed MCSR Shuffle with final RTA of {final_rta}")
-
 
         self.complete()
 

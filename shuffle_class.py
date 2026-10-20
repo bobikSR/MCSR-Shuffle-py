@@ -4,6 +4,7 @@ import random
 import re
 import threading
 import time
+import ctypes
 from threading import Event
 
 import keyboard
@@ -178,7 +179,7 @@ class MCSRShuffle(QObject):
 
     def set_up(self):
         # first create worlds using atum
-        for inst in self.minecraft_instances:
+        for i, inst in enumerate(self.minecraft_instances):
             utils.activate_window(inst.hwnd)
             if inst.is_in_state("title"):
                 time.sleep(self.config.set_up_key_press_pause)

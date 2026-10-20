@@ -188,7 +188,7 @@ class SettingsTab(QWidget):
             if val is None or val.strip() == "":
                 invalid_fields.append(f)
         if len(invalid_fields) > 0:
-            validation_msg = f"ERROR: Make sure you fill out these fields: {", ".join([f for f in invalid_fields])}"
+            validation_msg = f"ERROR: Make sure you fill out these fields: {', '.join([f for f in invalid_fields])}"
         return validation_msg
 
     def fade(self, widget):
